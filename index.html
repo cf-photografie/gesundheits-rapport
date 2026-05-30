@@ -76,6 +76,15 @@ main{padding:16px;max-width:560px;margin:0 auto;padding-bottom:40px}
 .stepper-btn:active{background:var(--accent-light)}
 .stepper-value{flex:1;text-align:center;font-size:1.4rem;font-weight:700;color:var(--text)}
 .stepper-divider{width:1px;height:32px;background:var(--border)}
+/* DRUM PICKER */
+.drum-wrap{position:relative;height:220px;overflow:hidden;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);touch-action:none}
+.drum-list{position:absolute;top:0;left:0;right:0;will-change:transform}
+.drum-item{height:44px;display:flex;align-items:center;justify-content:center;font-size:1rem;color:var(--text2);font-family:var(--font);font-weight:500;transition:color .15s,font-size .15s}
+.drum-item.active{font-size:1.35rem;font-weight:700;color:var(--text)}
+.drum-fade-top{position:absolute;top:0;left:0;right:0;height:88px;background:linear-gradient(to bottom,var(--bg) 0%,transparent 100%);pointer-events:none;z-index:2}
+.drum-fade-bot{position:absolute;bottom:0;left:0;right:0;height:88px;background:linear-gradient(to top,var(--bg) 0%,transparent 100%);pointer-events:none;z-index:2}
+.drum-selector{position:absolute;top:88px;left:0;right:0;height:44px;border-top:1.5px solid var(--accent);border-bottom:1.5px solid var(--accent);pointer-events:none;z-index:3;opacity:.35}
+
 
 
 
@@ -247,7 +256,12 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
         <button class="toggle-btn" onclick="setMealType('none')" id="mealNoneBtn">—</button>
       </div>
       <div id="mealMilkSection">
-        <select id="mlSelect" onchange="mlVal=parseInt(this.value)" style="width:100%;padding:14px;border:1.5px solid var(--border);border-radius:10px;font-family:var(--font);font-size:1.1rem;font-weight:700;background:var(--bg);color:var(--text);outline:none;text-align:center;cursor:pointer"></select>
+        <div class="drum-wrap" id="drumWrap">
+          <div class="drum-list" id="drumList"></div>
+          <div class="drum-fade-top"></div>
+          <div class="drum-fade-bot"></div>
+          <div class="drum-selector"></div>
+        </div>
       </div>
       <div id="mealFoodSection" style="display:none">
         <input type="text" id="mealFoodInput">
@@ -343,7 +357,12 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
         <button class="toggle-btn" onclick="setEditMealType('none')" id="editMealNoneBtn">—</button>
       </div>
       <div id="editMealMilkSection">
-        <select id="editMlSelect" onchange="editMlVal=parseInt(this.value)" style="width:100%;padding:14px;border:1.5px solid var(--border);border-radius:10px;font-family:var(--font);font-size:1.1rem;font-weight:700;background:var(--bg);color:var(--text);outline:none;text-align:center;cursor:pointer"></select>
+        <div class="drum-wrap" id="editDrumWrap">
+          <div class="drum-list" id="editDrumList"></div>
+          <div class="drum-fade-top"></div>
+          <div class="drum-fade-bot"></div>
+          <div class="drum-selector"></div>
+        </div>
       </div>
       <div id="editMealFoodSection" style="display:none">
         <input type="text" id="editMealFoodInput">
@@ -515,12 +534,83 @@ window.doEditStep = (type,dir) => {
   if(type==='temp'){editTempVal=Math.min(420,Math.max(350,editTempVal+dir));document.getElementById('editTempDisplay').textContent=(editTempVal/10).toFixed(1)+'°C';}
 };
 
-// ── ML SELECT ──
-const ML_STEPS=[];for(let i=10;i<=300;i+=5)ML_STEPS.push(i);
-function buildMlSelect(id,val){
-  const sel=document.getElementById(id);
-  if(!sel)return;
-  sel.innerHTML=ML_STEPS.map(v=>`<option value="${v}"${v===val?' selected':''}>${v} ml</option>`).join('');
+// ── DRUM PICKER ──────────────────────────────────────────────────────────
+const ML_STEPS=[];for(let v=10;v<=300;v+=5)ML_STEPS.push(v);
+const DRUM_H=44, DRUM_VISIBLE=5, DRUM_OFFSET=88; // 2 items above center
+
+function buildDrum(listId, val){
+  const list=document.getElementById(listId);
+  if(!list)return;
+  list.innerHTML=ML_STEPS.map((v,i)=>`<div class="drum-item${v===val?' active':''}" data-idx="${i}">${v} ml</div>`).join('');
+  setDrumIndex(listId, ML_STEPS.indexOf(val), false);
+}
+
+function setDrumIndex(listId, idx, animate){
+  const list=document.getElementById(listId);
+  if(!list)return;
+  idx=Math.max(0,Math.min(ML_STEPS.length-1,idx));
+  if(animate){list.style.transition='transform .2s cubic-bezier(.25,.46,.45,.94)';}
+  else{list.style.transition='none';}
+  list.style.transform=`translateY(${DRUM_OFFSET - idx*DRUM_H}px)`;
+  list.querySelectorAll('.drum-item').forEach((el,i)=>el.classList.toggle('active',i===idx));
+  // update value
+  const newVal=ML_STEPS[idx];
+  if(listId==='drumList') mlVal=newVal;
+  else editMlVal=newVal;
+}
+
+function getDrumIndex(listId){
+  const list=document.getElementById(listId);
+  if(!list)return 0;
+  const ty=parseFloat(list.style.transform.replace('translateY(',''))||DRUM_OFFSET;
+  return Math.round((DRUM_OFFSET-ty)/DRUM_H);
+}
+
+// Drum interaction
+function initDrum(wrapId, listId){
+  const wrap=document.getElementById(wrapId);
+  if(!wrap)return;
+  let startY=0, startTY=0, isDragging=false;
+
+  function getY(e){return e.touches?e.touches[0].clientY:e.clientY;}
+  function getTY(list){
+    const m=list.style.transform.match(/translateY\((.+)px\)/);
+    return m?parseFloat(m[1]):DRUM_OFFSET;
+  }
+  function onStart(e){
+    const list=document.getElementById(listId);
+    isDragging=true; startY=getY(e); startTY=getTY(list);
+    list.style.transition='none';
+    e.preventDefault();
+  }
+  function onMove(e){
+    if(!isDragging)return;
+    const list=document.getElementById(listId);
+    const dy=getY(e)-startY;
+    const newTY=startTY+dy;
+    const minTY=DRUM_OFFSET-(ML_STEPS.length-1)*DRUM_H;
+    const clampedTY=Math.max(minTY,Math.min(DRUM_OFFSET,newTY));
+    list.style.transform=`translateY(${clampedTY}px)`;
+    e.preventDefault();
+  }
+  function onEnd(e){
+    if(!isDragging)return;
+    isDragging=false;
+    const idx=getDrumIndex(listId);
+    setDrumIndex(listId,idx,true);
+  }
+  wrap.addEventListener('touchstart',onStart,{passive:false});
+  wrap.addEventListener('touchmove',onMove,{passive:false});
+  wrap.addEventListener('touchend',onEnd);
+  wrap.addEventListener('mousedown',onStart);
+  window.addEventListener('mousemove',e=>{if(isDragging)onMove(e);});
+  window.addEventListener('mouseup',e=>{if(isDragging)onEnd(e);});
+
+  // click on item to select
+  wrap.addEventListener('click',e=>{
+    const item=e.target.closest('.drum-item');
+    if(item)setDrumIndex(listId,parseInt(item.dataset.idx),true);
+  });
 }
 
 // ── MEAL ──
@@ -563,7 +653,7 @@ window.toggleEditCheck = id => {
 window.saveEntry = async () => {
   const btn=document.getElementById('submitBtn');
   btn.disabled=true; setSyncStatus('syncing');
-  let meal=mealType==='milk'?(document.getElementById('mlSelect')?parseInt(document.getElementById('mlSelect').value)||mlVal:mlVal)+' ml':mealType==='food'?(document.getElementById('mealFoodInput').value||T[lang].mealFood):'—';
+  let meal=mealType==='milk'?mlVal+' ml':mealType==='food'?(document.getElementById('mealFoodInput').value||T[lang].mealFood):'—';
   try {
     await addDoc(colRef,{
       date:document.getElementById('inputDate').value,
@@ -592,7 +682,7 @@ window.openEdit = id => {
   editMealType=e.mealType||'none';
   editMlVal=e.mealType==='milk'?parseInt(e.meal)||200:200;
   setEditMealType(editMealType);
-  buildMlSelect('editMlSelect',editMlVal);
+  buildDrum('editDrumList',editMlVal);
   document.getElementById('editMealFoodInput').value=e.mealType==='food'?e.meal:'';
   ['vitD3','panda','urin','stuhl'].forEach(k=>{
     editChecks[k]=!!e[k];
@@ -728,7 +818,7 @@ window.showToast=(msg,isErr=false)=>{const t=document.getElementById('toast');t.
 function resetForm(){
   initDateTime();
   tempVal=370; updateTempDisplay(); setTempMode('none');
-  mlVal=200; buildMlSelect('mlSelect',mlVal);
+  mlVal=200; buildDrum('drumList',mlVal);
   setMealType('milk');
   document.getElementById('mealFoodInput').value='';
   document.getElementById('noteInput').value='';
@@ -746,8 +836,8 @@ function initDateTime(){
 }
 
 initDateTime(); updateTempDisplay();
-buildMlSelect("mlSelect",mlVal);
-buildMlSelect("editMlSelect",editMlVal);
+buildDrum("drumList",mlVal); initDrum("drumWrap","drumList");
+buildDrum("editDrumList",editMlVal); initDrum("editDrumWrap","editDrumList");
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
