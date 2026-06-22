@@ -238,7 +238,10 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
       <h1>👶 Babypass</h1>
       <p id="welcomeUserEmail"></p>
     </div>
-    <button class="logout-btn" onclick="doLogout()">Abmelden</button>
+    <div style="display:flex;gap:8px">
+      <button class="logout-btn" onclick="openSettings()">⚙️</button>
+      <button class="logout-btn" onclick="doLogout()">Abmelden</button>
+    </div>
   </div>
   <div class="welcome-body">
     <div class="welcome-title" id="welcomeTitle">Meine Babys</div>
@@ -265,6 +268,7 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
       </div>
       <div class="header-right">
         <div class="sync-dot" id="syncDot"></div>
+        <button class="logout-btn" onclick="openSettings()" style="padding:5px 10px;font-size:.9rem">⚙️</button>
         <div class="lang-toggle">
           <button class="lang-btn active" onclick="setLang('de')">DE</button>
           <button class="lang-btn" onclick="setLang('it')">IT</button>
@@ -356,9 +360,9 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
             <div class="check-box" id="boxVitD3"></div>
             <div><div class="check-emoji">☀️</div><div class="check-label" id="lblVitD3">Vitamin D3</div></div>
           </div>
-          <div class="check-item" onclick="toggleCheck('Camilia')" id="checkCamilia">
-            <div class="check-box" id="boxCamilia"></div>
-            <div><div class="check-emoji">🌼</div><div class="check-label" id="lblCamilia">Camilia</div></div>
+          <div class="check-item" onclick="toggleCheck('panda')" id="checkPanda">
+            <div class="check-box" id="boxPanda"></div>
+            <div><div class="check-emoji">🌼</div><div class="check-label" id="lblPanda">Camilia</div></div>
           </div>
           <div class="check-item" onclick="toggleCheck('urin')" id="checkUrin">
             <div class="check-box" id="boxUrin"></div>
@@ -452,8 +456,8 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
           <div class="check-box" id="editBoxVitD3"></div>
           <div><div class="check-emoji">☀️</div><div class="check-label">Vitamin D3</div></div>
         </div>
-        <div class="check-item" onclick="toggleEditCheck('Camilia')" id="editCheckCamilia">
-          <div class="check-box" id="editBoxCamilia"></div>
+        <div class="check-item" onclick="toggleEditCheck('panda')" id="editCheckPanda">
+          <div class="check-box" id="editBoxPanda"></div>
           <div><div class="check-emoji">🌼</div><div class="check-label">Camilia</div></div>
         </div>
         <div class="check-item" onclick="toggleEditCheck('urin')" id="editCheckUrin">
@@ -529,6 +533,43 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
   </div>
 </div>
 
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal" onclick="closeSettingsOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⚙️ Einstellungen</div>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+
+    <!-- PASSWORT -->
+    <div style="margin-bottom:20px">
+      <div class="card-label" style="margin-bottom:12px">Passwort ändern</div>
+      <input type="password" class="modal-input" id="settingsNewPw" placeholder="Neues Passwort (min. 6 Zeichen)">
+      <input type="password" class="modal-input" id="settingsNewPw2" placeholder="Passwort bestätigen">
+      <button class="modal-save-btn" onclick="changePassword()" style="margin-top:0">Passwort speichern</button>
+    </div>
+
+    <!-- CHECKPUNKTE -->
+    <div>
+      <div class="card-label" style="margin-bottom:12px">Checkpunkte anpassen</div>
+      <div id="checkpointSettings"></div>
+      <button class="modal-save-btn" onclick="saveCheckpoints()">Checkpunkte speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- EMOJI PICKER MODAL -->
+<div class="modal-overlay" id="emojiModal" onclick="closeEmojiOutside(event)">
+  <div class="modal" style="padding-bottom:20px">
+    <div class="modal-header">
+      <div class="modal-title">Icon wählen</div>
+      <button class="modal-close" onclick="closeEmoji()">✕</button>
+    </div>
+    <div id="emojiGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;max-height:300px;overflow-y:auto"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -540,7 +581,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, si
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const app = initializeApp({
-  apiKey:"AIzaSyAHwARmCNsKcQZj276ogN0DEONJN1DoQoQ",
+  apiKey:"AIzaSyAFGv78K2ZNApvjWfHIC2H0dhYaT7x0-_0",
   authDomain:"gesundheits-rapport.firebaseapp.com",
   projectId:"gesundheits-rapport",
   storageBucket:"gesundheits-rapport.firebasestorage.app",
@@ -562,12 +603,12 @@ let tempVal = 370;
 let mlVal = 200;
 let pastVisible = false;
 let allEntries = [];
-const checks = {vitD3:false,Camilia:false,urin:false,stuhl:false};
+const checks = {vitD3:false,panda:false,urin:false,stuhl:false};
 let editTempMode = 'none';
 let editTempVal = 370;
 let editMlVal = 200;
 let editMealType = 'milk';
-const editChecks = {vitD3:false,Camilia:false,urin:false,stuhl:false};
+const editChecks = {vitD3:false,panda:false,urin:false,stuhl:false};
 let unsub = null;
 
 // ── AUTH STATE ─────────────────────────────────────────────────────────────
@@ -576,7 +617,7 @@ onAuthStateChanged(auth, user => {
     currentUser = user;
     document.getElementById('welcomeUserEmail').textContent = user.email;
     showScreen('welcomeScreen');
-    loadBabies();
+    loadBabies(); loadCheckpointSettings();
   } else {
     currentUser = null;
     showScreen('authScreen');
@@ -712,7 +753,7 @@ const T = {
     tempNone:'Nicht gemessen',tempMeasured:'Gemessen',
     mealMilk:'Babymilch',mealFood:'Essen',mealNone:'— Keine',
     tempLow:'Unterkühlt',tempNormal:'Normal',tempHigh:'Erhöht',tempFever:'Fieber',
-    lblVitD3:'Vitamin D3',lblCamilia:'Camilia',lblUrin:'Urin',lblStuhl:'Stuhl',
+    lblVitD3:'Vitamin D3',lblPanda:'Camilia',lblUrin:'Urin',lblStuhl:'Stuhl',
     stuhlCounterLabel:'Stuhl heute',milkTotalLabel:'Milch heute',
     notePlaceholder:'Freitext...',foodPlaceholder:'z.B. Suppe, Brei...',
     saved:'✓ Gespeichert',updated:'✓ Aktualisiert',syncError:'⚠ Verbindungsfehler',
@@ -726,7 +767,7 @@ const T = {
     tempNone:'Non misurata',tempMeasured:'Misurata',
     mealMilk:'Latte',mealFood:'Cibo',mealNone:'— Nessuno',
     tempLow:'Ipotermia',tempNormal:'Normale',tempHigh:'Elevata',tempFever:'Febbre',
-    lblVitD3:'Vitamina D3',lblCamilia:'Camilia',lblUrin:'Urina',lblStuhl:'Feci',
+    lblVitD3:'Vitamina D3',lblPanda:'Camilia',lblUrin:'Urina',lblStuhl:'Feci',
     stuhlCounterLabel:'Feci oggi',milkTotalLabel:'Latte oggi',
     notePlaceholder:'Testo libero...',foodPlaceholder:'es. zuppa, yogurt...',
     saved:'✓ Salvato',updated:'✓ Aggiornato',syncError:'⚠ Errore connessione',
@@ -745,7 +786,7 @@ window.setLang = l => {
    ['labelNote',t.labelNote],['submitBtn',t.submitBtn],['historyTitle',t.historyTitle],
    ['tempNoneBtn',t.tempNone],['tempMeasuredBtn',t.tempMeasured],
    ['mealMilkBtn',t.mealMilk],['mealFoodBtn',t.mealFood],['mealNoneBtn',t.mealNone],
-   ['lblVitD3',t.lblVitD3],['lblCamilia',t.lblCamilia],['lblUrin',t.lblUrin],['lblStuhl',t.lblStuhl],
+   ['lblVitD3',t.lblVitD3],['lblPanda',t.lblPanda],['lblUrin',t.lblUrin],['lblStuhl',t.lblStuhl],
    ['stuhlCounterLabel',t.stuhlCounterLabel],['milkTotalLabel',t.milkTotalLabel],
    ['todayHeader',t.todayHeader],['forecastLabel',t.forecastLabel]
   ].forEach(([id,txt])=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
@@ -908,7 +949,7 @@ window.saveEntry = async () => {
       time:document.getElementById('inputTime').value,
       tempMode, temp:tempMode==='measured'?(tempVal/10).toFixed(1):null,
       mealType, meal,
-      vitD3:checks.vitD3,Camilia:checks.Camilia,urin:checks.urin,stuhl:checks.stuhl,
+      vitD3:checks.vitD3,panda:checks.panda,urin:checks.urin,stuhl:checks.stuhl,
       note:document.getElementById('noteInput').value,
       lang, createdAt:new Date().toISOString()
     });
@@ -931,7 +972,7 @@ window.openEdit = id => {
   setEditMealType(editMealType);
   buildDrum('editDrumList',editMlVal);
   document.getElementById('editMealFoodInput').value=e.mealType==='food'?e.meal:'';
-  ['vitD3','Camilia','urin','stuhl'].forEach(k=>{
+  ['vitD3','panda','urin','stuhl'].forEach(k=>{
     editChecks[k]=!!e[k];
     const K=k[0].toUpperCase()+k.slice(1);
     document.getElementById('editCheck'+K).classList.toggle('checked',editChecks[k]);
@@ -953,7 +994,7 @@ window.saveEdit = async () => {
       time:document.getElementById('editTime').value,
       tempMode:editTempMode, temp:editTempMode==='measured'?(editTempVal/10).toFixed(1):null,
       mealType:editMealType, meal,
-      vitD3:editChecks.vitD3,Camilia:editChecks.Camilia,urin:editChecks.urin,stuhl:editChecks.stuhl,
+      vitD3:editChecks.vitD3,panda:editChecks.panda,urin:editChecks.urin,stuhl:editChecks.stuhl,
       note:document.getElementById('editNote').value
     });
     showToast(T[lang].updated); closeModal();
@@ -1006,9 +1047,9 @@ function renderEntry(e,isToday){
   const mChip=e.meal&&e.meal!=='—'?`<span class="chip blue">🍼 ${e.meal}</span>`:'';
   const chips=[tChip,mChip,
     e.vitD3?`<span class="chip green">☀️ ${l.lblVitD3}</span>`:'',
-    e.Camilia?`<span class="chip green">🌼 ${l.lblCamilia}</span>`:'',
+    e.panda?`<span class="chip green">🌼 ${l.lblPanda}</span>`:'',
     e.urin?`<span class="chip green">💧 ${l.lblUrin}</span>`:'',
-    e.stuhl?`<span class="chip green">💩 ${l.lblStuhl}</span>`:''
+    e.stuhl?`<span class="chip green">🟤 ${l.lblStuhl}</span>`:''
   ].filter(Boolean).join('');
   return `<div class="history-entry${isToday?' today-entry':''}">
     <div class="entry-header">
@@ -1051,7 +1092,7 @@ window.exportXLSX=()=>{
     'Temperatur':e.tempMode==='none'?'—':(e.temp+'°C'),
     'Mahlzeit':e.meal||'—',
     [t.lblVitD3]:e.vitD3?'✓':'',
-    [t.lblCamilia]:e.Camilia?'✓':'',
+    [t.lblPanda]:e.panda?'✓':'',
     [t.lblUrin]:e.urin?'✓':'',
     [t.lblStuhl]:e.stuhl?'✓':'',
     'Bemerkung':e.note||''
@@ -1074,7 +1115,7 @@ function resetForm(){
   setMealType('milk');
   document.getElementById('mealFoodInput').value='';
   document.getElementById('noteInput').value='';
-  ['vitD3','Camilia','urin','stuhl'].forEach(id=>{
+  ['vitD3','panda','urin','stuhl'].forEach(id=>{
     checks[id]=false;
     const k=id[0].toUpperCase()+id.slice(1);
     document.getElementById('check'+k).classList.remove('checked');
@@ -1087,6 +1128,127 @@ function initDateTime(){
   document.getElementById('inputTime').value=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
 }
 
+
+
+// ── SETTINGS ───────────────────────────────────────────────────────────────
+const EMOJI_LIST = ['☀️','🌼','💧','🟤','💊','🍼','🌡','❤️','⭐','🌙','🦋','🌈',
+  '🧸','🐣','🌿','🍃','🌺','🌸','🍀','🌻','🎀','🧡','💛','💚','💙','💜',
+  '🔵','🟢','🟡','🟠','🔴','⚪','🩺','💉','🧴','🛁','😴','😊','🤒','🤧'];
+
+let checkpointSettings = {
+  vitD3: {label:'Vitamin D3', icon:'☀️'},
+  panda: {label:'Camilia', icon:'🌼'},
+  urin:  {label:'Urin', icon:'💧'},
+  stuhl: {label:'Stuhl', icon:'🟤'}
+};
+let emojiTarget = null;
+
+async function loadCheckpointSettings(){
+  if(!currentUser) return;
+  try {
+    const snap = await getDoc(doc(db,`users/${currentUser.uid}/settings/checkpoints`));
+    if(snap.exists()) checkpointSettings = snap.data();
+    applyCheckpointSettings();
+  } catch(e){ console.error(e); }
+}
+
+function applyCheckpointSettings(){
+  const keys = ['vitD3','panda','urin','stuhl'];
+  const ids  = ['VitD3','Panda','Urin','Stuhl'];
+  keys.forEach((k,i) => {
+    const s = checkpointSettings[k];
+    // form
+    const lbl = document.getElementById('lbl'+ids[i]);
+    const chk = document.getElementById('check'+ids[i]);
+    if(lbl) lbl.textContent = s.label;
+    if(chk) {
+      const emoji = chk.querySelector('.check-emoji');
+      if(emoji) emoji.textContent = s.icon;
+    }
+    // edit modal
+    const echk = document.getElementById('editCheck'+ids[i]);
+    if(echk){
+      const eemoji = echk.querySelector('.check-emoji');
+      const elbl = echk.querySelector('.check-label');
+      if(eemoji) eemoji.textContent = s.icon;
+      if(elbl) elbl.textContent = s.label;
+    }
+  });
+}
+
+window.openSettings = () => {
+  // Reset pw fields
+  document.getElementById('settingsNewPw').value='';
+  document.getElementById('settingsNewPw2').value='';
+  // Render checkpoint fields
+  const container = document.getElementById('checkpointSettings');
+  container.innerHTML = Object.entries(checkpointSettings).map(([k,s])=>`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <button onclick="openEmoji('${k}')" style="width:44px;height:44px;font-size:1.4rem;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);cursor:pointer;flex-shrink:0" id="emojiBtn_${k}">${s.icon}</button>
+      <input type="text" value="${s.label}" id="cpLabel_${k}" style="flex:1;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:var(--font);font-size:.88rem;background:var(--bg);color:var(--text);outline:none">
+    </div>
+  `).join('');
+  document.getElementById('settingsModal').classList.add('open');
+};
+window.closeSettings = () => document.getElementById('settingsModal').classList.remove('open');
+window.closeSettingsOutside = ev => { if(ev.target===document.getElementById('settingsModal')) closeSettings(); };
+
+window.changePassword = async () => {
+  const pw1 = document.getElementById('settingsNewPw').value;
+  const pw2 = document.getElementById('settingsNewPw2').value;
+  if(!pw1||!pw2){showToast('Bitte beide Felder ausfüllen',true);return;}
+  if(pw1!==pw2){showToast('Passwörter stimmen nicht überein',true);return;}
+  if(pw1.length<6){showToast('Mindestens 6 Zeichen',true);return;}
+  try {
+    const {updatePassword} = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+    await updatePassword(auth.currentUser, pw1);
+    document.getElementById('settingsNewPw').value='';
+    document.getElementById('settingsNewPw2').value='';
+    showToast('✓ Passwort geändert');
+  } catch(e){
+    if(e.code==='auth/requires-recent-login'){
+      showToast('⚠ Bitte neu einloggen und nochmals versuchen',true);
+    } else {
+      showToast('⚠ Fehler: '+e.message,true);
+    }
+  }
+};
+
+window.saveCheckpoints = async () => {
+  const keys = ['vitD3','panda','urin','stuhl'];
+  keys.forEach(k => {
+    const lbl = document.getElementById('cpLabel_'+k);
+    const btn = document.getElementById('emojiBtn_'+k);
+    if(lbl) checkpointSettings[k].label = lbl.value.trim()||checkpointSettings[k].label;
+    if(btn) checkpointSettings[k].icon = btn.textContent;
+  });
+  try {
+    await setDoc(doc(db,`users/${currentUser.uid}/settings/checkpoints`), checkpointSettings);
+    applyCheckpointSettings();
+    closeSettings();
+    showToast('✓ Checkpunkte gespeichert');
+  } catch(e){ showToast('⚠ Fehler',true); console.error(e); }
+};
+
+// EMOJI PICKER
+window.openEmoji = key => {
+  emojiTarget = key;
+  const grid = document.getElementById('emojiGrid');
+  grid.innerHTML = EMOJI_LIST.map(e=>`
+    <button onclick="pickEmoji('${e}')" style="font-size:1.6rem;padding:8px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);cursor:pointer;line-height:1">${e}</button>
+  `).join('');
+  document.getElementById('emojiModal').classList.add('open');
+};
+window.closeEmoji = () => document.getElementById('emojiModal').classList.remove('open');
+window.closeEmojiOutside = ev => { if(ev.target===document.getElementById('emojiModal')) closeEmoji(); };
+window.pickEmoji = emoji => {
+  if(emojiTarget){
+    const btn = document.getElementById('emojiBtn_'+emojiTarget);
+    if(btn) btn.textContent = emoji;
+    checkpointSettings[emojiTarget].icon = emoji;
+  }
+  closeEmoji();
+};
 
 // ── MIGRATION ──────────────────────────────────────────────────────────────
 window.openMigration = () => {
