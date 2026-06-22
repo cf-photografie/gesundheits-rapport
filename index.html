@@ -227,6 +227,9 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
         <input type="password" id="authPassword" placeholder="Mindestens 6 Zeichen" autocomplete="current-password">
       </div>
       <button class="auth-btn" id="authBtn" onclick="doAuth()">Anmelden</button>
+      <div id="forgotPwWrap" style="text-align:center;margin-top:12px">
+        <button onclick="doForgotPassword()" style="background:none;border:none;color:var(--accent);font-family:var(--font);font-size:.82rem;cursor:pointer;text-decoration:underline">Passwort vergessen?</button>
+      </div>
     </div>
   </div>
 </div>
@@ -355,7 +358,7 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
       </div>
       <div class="card">
         <div class="card-label" id="labelCheckpoints">Checkpunkte</div>
-        <div class="check-grid">
+        <div class="check-grid" id="checkGrid">
           <div class="check-item" onclick="toggleCheck('vitD3')" id="checkVitD3">
             <div class="check-box" id="boxVitD3"></div>
             <div><div class="check-emoji">☀️</div><div class="check-label" id="lblVitD3">Vitamin D3</div></div>
@@ -451,7 +454,7 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
     </div>
     <div class="modal-section">
       <div class="modal-label">Checkpunkte</div>
-      <div class="check-grid">
+      <div class="check-grid" id="editCheckGrid">
         <div class="check-item" onclick="toggleEditCheck('vitD3')" id="editCheckVitD3">
           <div class="check-box" id="editBoxVitD3"></div>
           <div><div class="check-emoji">☀️</div><div class="check-label">Vitamin D3</div></div>
@@ -554,6 +557,7 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
     <div>
       <div class="card-label" style="margin-bottom:12px">Checkpunkte anpassen</div>
       <div id="checkpointSettings"></div>
+      <button onclick="addCheckpoint()" style="width:100%;padding:11px;border:1.5px dashed var(--border);border-radius:10px;background:transparent;font-family:var(--font);font-size:.85rem;color:var(--accent);cursor:pointer;font-weight:600;margin-bottom:12px">+ Checkpunkt hinzufügen</button>
       <button class="modal-save-btn" onclick="saveCheckpoints()">Checkpunkte speichern</button>
     </div>
   </div>
@@ -638,6 +642,30 @@ window.setAuthTab = mode => {
   document.getElementById('authTabRegister').classList.toggle('active', mode==='register');
   document.getElementById('authBtn').textContent = mode==='login' ? 'Anmelden' : 'Registrieren';
   document.getElementById('authError').classList.remove('show');
+  document.getElementById('forgotPwWrap').style.display = mode==='login' ? 'block' : 'none';
+};
+
+window.doForgotPassword = async () => {
+  const email = document.getElementById('authEmail').value.trim();
+  if(!email){
+    document.getElementById('authError').textContent='Bitte zuerst deine E-Mail eingeben.';
+    document.getElementById('authError').classList.add('show');
+    return;
+  }
+  try {
+    const {sendPasswordResetEmail} = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+    await sendPasswordResetEmail(auth, email);
+    document.getElementById('authError').style.background='#dcfce7';
+    document.getElementById('authError').style.color='#16a34a';
+    document.getElementById('authError').textContent='✓ Reset-E-Mail wurde gesendet! Bitte prüfe dein Postfach.';
+    document.getElementById('authError').classList.add('show');
+  } catch(e){
+    const msgs = {'auth/user-not-found':'Kein Konto mit dieser E-Mail.','auth/invalid-email':'Ungültige E-Mail-Adresse.'};
+    document.getElementById('authError').style.background='#fee2e2';
+    document.getElementById('authError').style.color='var(--red)';
+    document.getElementById('authError').textContent = msgs[e.code]||'Fehler: '+e.message;
+    document.getElementById('authError').classList.add('show');
+  }
 };
 
 window.doAuth = async () => {
@@ -924,15 +952,29 @@ window.setEditMealType = type => {
 // ── CHECKBOXES ─────────────────────────────────────────────────────────────
 window.toggleCheck = id => {
   checks[id]=!checks[id];
-  const k=id[0].toUpperCase()+id.slice(1);
-  document.getElementById('check'+k).classList.toggle('checked',checks[id]);
-  document.getElementById('box'+k).textContent=checks[id]?'✓':'';
+  const fixed=['vitD3','panda','urin','stuhl'];
+  if(fixed.includes(id)){
+    const k=id[0].toUpperCase()+id.slice(1);
+    document.getElementById('check'+k).classList.toggle('checked',checks[id]);
+    document.getElementById('box'+k).textContent=checks[id]?'✓':'';
+  } else {
+    const safe=id.replace(/[^a-zA-Z0-9]/g,'_');
+    document.getElementById('checkDyn_'+safe).classList.toggle('checked',checks[id]);
+    document.getElementById('boxDyn_'+safe).textContent=checks[id]?'✓':'';
+  }
 };
 window.toggleEditCheck = id => {
   editChecks[id]=!editChecks[id];
-  const k=id[0].toUpperCase()+id.slice(1);
-  document.getElementById('editCheck'+k).classList.toggle('checked',editChecks[id]);
-  document.getElementById('editBox'+k).textContent=editChecks[id]?'✓':'';
+  const fixed=['vitD3','panda','urin','stuhl'];
+  if(fixed.includes(id)){
+    const k=id[0].toUpperCase()+id.slice(1);
+    document.getElementById('editCheck'+k).classList.toggle('checked',editChecks[id]);
+    document.getElementById('editBox'+k).textContent=editChecks[id]?'✓':'';
+  } else {
+    const safe=id.replace(/[^a-zA-Z0-9]/g,'_');
+    document.getElementById('editCheckDyn_'+safe).classList.toggle('checked',editChecks[id]);
+    document.getElementById('editBoxDyn_'+safe).textContent=editChecks[id]?'✓':'';
+  }
 };
 
 // ── SAVE ───────────────────────────────────────────────────────────────────
@@ -949,7 +991,7 @@ window.saveEntry = async () => {
       time:document.getElementById('inputTime').value,
       tempMode, temp:tempMode==='measured'?(tempVal/10).toFixed(1):null,
       mealType, meal,
-      vitD3:checks.vitD3,panda:checks.panda,urin:checks.urin,stuhl:checks.stuhl,
+      ...Object.fromEntries(Object.keys(checks).map(k=>[k,checks[k]])),
       note:document.getElementById('noteInput').value,
       lang, createdAt:new Date().toISOString()
     });
@@ -994,7 +1036,7 @@ window.saveEdit = async () => {
       time:document.getElementById('editTime').value,
       tempMode:editTempMode, temp:editTempMode==='measured'?(editTempVal/10).toFixed(1):null,
       mealType:editMealType, meal,
-      vitD3:editChecks.vitD3,panda:editChecks.panda,urin:editChecks.urin,stuhl:editChecks.stuhl,
+      ...Object.fromEntries(Object.keys(editChecks).map(k=>[k,editChecks[k]])),
       note:document.getElementById('editNote').value
     });
     showToast(T[lang].updated); closeModal();
@@ -1045,12 +1087,11 @@ function renderEntry(e,isToday){
   const tv=parseFloat(e.temp);
   const tChip=e.tempMode==='none'||!e.temp?`<span class="chip">🌡 —</span>`:`<span class="chip ${tv<36?'blue':tv>=38.3?'red':tv>=37.5?'orange':'green'}">🌡 ${e.temp}°C</span>`;
   const mChip=e.meal&&e.meal!=='—'?`<span class="chip blue">🍼 ${e.meal}</span>`:'';
-  const chips=[tChip,mChip,
-    e.vitD3?`<span class="chip green">☀️ ${l.lblVitD3}</span>`:'',
-    e.panda?`<span class="chip green">🌼 ${l.lblPanda}</span>`:'',
-    e.urin?`<span class="chip green">💧 ${l.lblUrin}</span>`:'',
-    e.stuhl?`<span class="chip green">🟤 ${l.lblStuhl}</span>`:''
-  ].filter(Boolean).join('');
+  const cpChips = Object.entries(checkpointSettings)
+    .sort((a,b)=>(a[1].order||0)-(b[1].order||0))
+    .map(([k,s])=>e[k]?`<span class="chip green">${s.icon} ${s.label}</span>`:'')
+    .filter(Boolean).join('');
+  const chips=[tChip,mChip,cpChips].filter(Boolean).join('');
   return `<div class="history-entry${isToday?' today-entry':''}">
     <div class="entry-header">
       <div><div class="entry-datetime">📅 ${e.date}</div><div class="entry-time">🕐 ${e.time}</div></div>
@@ -1136,10 +1177,10 @@ const EMOJI_LIST = ['☀️','🌼','💧','🟤','💊','🍼','🌡','❤️',
   '🔵','🟢','🟡','🟠','🔴','⚪','🩺','💉','🧴','🛁','😴','😊','🤒','🤧'];
 
 let checkpointSettings = {
-  vitD3: {label:'Vitamin D3', icon:'☀️'},
-  panda: {label:'Camilia', icon:'🌼'},
-  urin:  {label:'Urin', icon:'💧'},
-  stuhl: {label:'Stuhl', icon:'🟤'}
+  vitD3: {label:'Vitamin D3', icon:'☀️', order:0},
+  panda: {label:'Camilia', icon:'🌼', order:1},
+  urin:  {label:'Urin', icon:'💧', order:2},
+  stuhl: {label:'Stuhl', icon:'🟤', order:3}
 };
 let emojiTarget = null;
 
@@ -1153,41 +1194,78 @@ async function loadCheckpointSettings(){
 }
 
 function applyCheckpointSettings(){
-  const keys = ['vitD3','panda','urin','stuhl'];
-  const ids  = ['VitD3','Panda','Urin','Stuhl'];
-  keys.forEach((k,i) => {
+  // Update fixed checkpoints (vitD3, panda, urin, stuhl)
+  const fixed = {vitD3:['VitD3','lblVitD3'], panda:['Panda','lblPanda'], urin:['Urin','lblUrin'], stuhl:['Stuhl','lblStuhl']};
+  Object.entries(fixed).forEach(([k,[id,lblId]])=>{
     const s = checkpointSettings[k];
-    // form
-    const lbl = document.getElementById('lbl'+ids[i]);
-    const chk = document.getElementById('check'+ids[i]);
+    if(!s) return;
+    const lbl = document.getElementById(lblId);
+    const chk = document.getElementById('check'+id);
     if(lbl) lbl.textContent = s.label;
-    if(chk) {
-      const emoji = chk.querySelector('.check-emoji');
-      if(emoji) emoji.textContent = s.icon;
-    }
-    // edit modal
-    const echk = document.getElementById('editCheck'+ids[i]);
+    if(chk){const emoji=chk.querySelector('.check-emoji');if(emoji)emoji.textContent=s.icon;}
+    const echk = document.getElementById('editCheck'+id);
     if(echk){
-      const eemoji = echk.querySelector('.check-emoji');
-      const elbl = echk.querySelector('.check-label');
-      if(eemoji) eemoji.textContent = s.icon;
-      if(elbl) elbl.textContent = s.label;
+      const eemoji=echk.querySelector('.check-emoji'); const elbl=echk.querySelector('.check-label');
+      if(eemoji)eemoji.textContent=s.icon; if(elbl)elbl.textContent=s.label;
     }
+  });
+  // Rebuild dynamic checkpoints in form
+  renderDynamicCheckpoints();
+}
+
+function renderDynamicCheckpoints(){
+  const dynamicKeys = Object.keys(checkpointSettings).filter(k=>!['vitD3','panda','urin','stuhl'].includes(k));
+  const formGrid = document.getElementById('checkGrid');
+  const editGrid = document.getElementById('editCheckGrid');
+  // Remove old dynamic items
+  document.querySelectorAll('.dynamic-check').forEach(el=>el.remove());
+  dynamicKeys.sort((a,b)=>(checkpointSettings[a].order||99)-(checkpointSettings[b].order||99)).forEach(k=>{
+    const s = checkpointSettings[k];
+    const safe = k.replace(/[^a-zA-Z0-9]/g,'_');
+    const html = `<div class="check-item dynamic-check" onclick="toggleCheck('${k}')" id="checkDyn_${safe}">
+      <div class="check-box" id="boxDyn_${safe}"></div>
+      <div><div class="check-emoji">${s.icon}</div><div class="check-label">${s.label}</div></div>
+    </div>`;
+    if(formGrid) formGrid.insertAdjacentHTML('beforeend', html);
+    const editHtml = `<div class="check-item dynamic-check" onclick="toggleEditCheck('${k}')" id="editCheckDyn_${safe}">
+      <div class="check-box" id="editBoxDyn_${safe}"></div>
+      <div><div class="check-emoji">${s.icon}</div><div class="check-label">${s.label}</div></div>
+    </div>`;
+    if(editGrid) editGrid.insertAdjacentHTML('beforeend', editHtml);
   });
 }
 
-window.openSettings = () => {
-  // Reset pw fields
-  document.getElementById('settingsNewPw').value='';
-  document.getElementById('settingsNewPw2').value='';
-  // Render checkpoint fields
+function renderCheckpointSettings(){
   const container = document.getElementById('checkpointSettings');
-  container.innerHTML = Object.entries(checkpointSettings).map(([k,s])=>`
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+  const sorted = Object.entries(checkpointSettings).sort((a,b)=>(a[1].order||0)-(b[1].order||0));
+  container.innerHTML = sorted.map(([k,s])=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px" id="cpRow_${k}">
       <button onclick="openEmoji('${k}')" style="width:44px;height:44px;font-size:1.4rem;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);cursor:pointer;flex-shrink:0" id="emojiBtn_${k}">${s.icon}</button>
       <input type="text" value="${s.label}" id="cpLabel_${k}" style="flex:1;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:var(--font);font-size:.88rem;background:var(--bg);color:var(--text);outline:none">
+      <button onclick="removeCheckpoint('${k}')" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);background:var(--bg);color:var(--red);font-size:1rem;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center">✕</button>
     </div>
   `).join('');
+}
+
+window.removeCheckpoint = key => {
+  if(Object.keys(checkpointSettings).length<=1){showToast('Mindestens 1 Checkpunkt erforderlich',true);return;}
+  delete checkpointSettings[key];
+  renderCheckpointSettings();
+};
+
+window.addCheckpoint = () => {
+  const key = 'cp_'+Date.now();
+  const maxOrder = Math.max(...Object.values(checkpointSettings).map(s=>s.order||0));
+  checkpointSettings[key] = {label:'Neu', icon:'⭐', order:maxOrder+1};
+  renderCheckpointSettings();
+  // focus new input
+  setTimeout(()=>{const el=document.getElementById('cpLabel_'+key);if(el){el.focus();el.select();}},50);
+};
+
+window.openSettings = () => {
+  document.getElementById('settingsNewPw').value='';
+  document.getElementById('settingsNewPw2').value='';
+  renderCheckpointSettings();
   document.getElementById('settingsModal').classList.add('open');
 };
 window.closeSettings = () => document.getElementById('settingsModal').classList.remove('open');
@@ -1215,8 +1293,7 @@ window.changePassword = async () => {
 };
 
 window.saveCheckpoints = async () => {
-  const keys = ['vitD3','panda','urin','stuhl'];
-  keys.forEach(k => {
+  Object.keys(checkpointSettings).forEach(k => {
     const lbl = document.getElementById('cpLabel_'+k);
     const btn = document.getElementById('emojiBtn_'+k);
     if(lbl) checkpointSettings[k].label = lbl.value.trim()||checkpointSettings[k].label;
