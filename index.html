@@ -245,6 +245,10 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
     <div class="baby-grid" id="babyGrid"></div>
     <button class="add-baby-btn" onclick="openAddBaby()" id="addBabyBtn">+ Baby hinzufügen</button>
     <button class="open-baby-btn" id="openBabyBtn" onclick="openBabyApp()">Protokoll öffnen →</button>
+    <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
+      <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);font-weight:700;margin-bottom:10px">Migration</div>
+      <button class="add-baby-btn" onclick="openMigration()" style="border-style:solid;color:var(--accent);border-color:var(--accent-light)">📦 Alte Daten importieren</button>
+    </div>
   </div>
 </div>
 
@@ -352,9 +356,9 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
             <div class="check-box" id="boxVitD3"></div>
             <div><div class="check-emoji">☀️</div><div class="check-label" id="lblVitD3">Vitamin D3</div></div>
           </div>
-          <div class="check-item" onclick="toggleCheck('panda')" id="checkPanda">
-            <div class="check-box" id="boxPanda"></div>
-            <div><div class="check-emoji">🌼</div><div class="check-label" id="lblPanda">Camilia</div></div>
+          <div class="check-item" onclick="toggleCheck('Camilia')" id="checkCamilia">
+            <div class="check-box" id="boxCamilia"></div>
+            <div><div class="check-emoji">🌼</div><div class="check-label" id="lblCamilia">Camilia</div></div>
           </div>
           <div class="check-item" onclick="toggleCheck('urin')" id="checkUrin">
             <div class="check-box" id="boxUrin"></div>
@@ -448,8 +452,8 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
           <div class="check-box" id="editBoxVitD3"></div>
           <div><div class="check-emoji">☀️</div><div class="check-label">Vitamin D3</div></div>
         </div>
-        <div class="check-item" onclick="toggleEditCheck('panda')" id="editCheckPanda">
-          <div class="check-box" id="editBoxPanda"></div>
+        <div class="check-item" onclick="toggleEditCheck('Camilia')" id="editCheckCamilia">
+          <div class="check-box" id="editBoxCamilia"></div>
           <div><div class="check-emoji">🌼</div><div class="check-label">Camilia</div></div>
         </div>
         <div class="check-item" onclick="toggleEditCheck('urin')" id="editCheckUrin">
@@ -496,6 +500,35 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
   </div>
 </div>
 
+
+<!-- MIGRATION MODAL -->
+<div class="modal-overlay" id="migrationModal" onclick="closeMigrationOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📦 Alte Daten importieren</div>
+      <button class="modal-close" onclick="closeMigration()">✕</button>
+    </div>
+    <div id="migrationContent">
+      <p style="font-size:.85rem;color:var(--text2);line-height:1.6;margin-bottom:16px">
+        Alle alten Einträge aus der Collection <strong>«rapporte»</strong> werden in dein ausgewähltes Baby kopiert. Wähle zuerst ein Baby auf dem Hauptscreen aus.
+      </p>
+      <div id="migrationBabyInfo" style="background:var(--accent-light);border-radius:10px;padding:12px;margin-bottom:16px;font-size:.85rem;color:var(--accent-dark);font-weight:600"></div>
+      <div id="migrationStatus" style="display:none;background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:16px">
+        <div style="font-size:.8rem;color:var(--text2);margin-bottom:8px" id="migrationStatusText">Vorbereitung...</div>
+        <div style="background:var(--border);border-radius:4px;height:8px;overflow:hidden">
+          <div id="migrationBar" style="background:var(--accent);height:100%;width:0%;transition:width .3s;border-radius:4px"></div>
+        </div>
+        <div style="font-size:.75rem;color:var(--text2);margin-top:6px" id="migrationCount"></div>
+      </div>
+      <div id="migrationDone" style="display:none;background:var(--green-light);border-radius:10px;padding:14px;margin-bottom:16px;text-align:center">
+        <div style="font-size:1.5rem;margin-bottom:4px">✅</div>
+        <div style="font-size:.9rem;font-weight:700;color:var(--green)" id="migrationDoneText">Migration abgeschlossen!</div>
+      </div>
+      <button class="modal-save-btn" id="migrationBtn" onclick="runMigration()">Jetzt importieren</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -529,12 +562,12 @@ let tempVal = 370;
 let mlVal = 200;
 let pastVisible = false;
 let allEntries = [];
-const checks = {vitD3:false,panda:false,urin:false,stuhl:false};
+const checks = {vitD3:false,Camilia:false,urin:false,stuhl:false};
 let editTempMode = 'none';
 let editTempVal = 370;
 let editMlVal = 200;
 let editMealType = 'milk';
-const editChecks = {vitD3:false,panda:false,urin:false,stuhl:false};
+const editChecks = {vitD3:false,Camilia:false,urin:false,stuhl:false};
 let unsub = null;
 
 // ── AUTH STATE ─────────────────────────────────────────────────────────────
@@ -679,7 +712,7 @@ const T = {
     tempNone:'Nicht gemessen',tempMeasured:'Gemessen',
     mealMilk:'Babymilch',mealFood:'Essen',mealNone:'— Keine',
     tempLow:'Unterkühlt',tempNormal:'Normal',tempHigh:'Erhöht',tempFever:'Fieber',
-    lblVitD3:'Vitamin D3',lblPanda:'Camilia',lblUrin:'Urin',lblStuhl:'Stuhl',
+    lblVitD3:'Vitamin D3',lblCamilia:'Camilia',lblUrin:'Urin',lblStuhl:'Stuhl',
     stuhlCounterLabel:'Stuhl heute',milkTotalLabel:'Milch heute',
     notePlaceholder:'Freitext...',foodPlaceholder:'z.B. Suppe, Brei...',
     saved:'✓ Gespeichert',updated:'✓ Aktualisiert',syncError:'⚠ Verbindungsfehler',
@@ -693,7 +726,7 @@ const T = {
     tempNone:'Non misurata',tempMeasured:'Misurata',
     mealMilk:'Latte',mealFood:'Cibo',mealNone:'— Nessuno',
     tempLow:'Ipotermia',tempNormal:'Normale',tempHigh:'Elevata',tempFever:'Febbre',
-    lblVitD3:'Vitamina D3',lblPanda:'Camilia',lblUrin:'Urina',lblStuhl:'Feci',
+    lblVitD3:'Vitamina D3',lblCamilia:'Camilia',lblUrin:'Urina',lblStuhl:'Feci',
     stuhlCounterLabel:'Feci oggi',milkTotalLabel:'Latte oggi',
     notePlaceholder:'Testo libero...',foodPlaceholder:'es. zuppa, yogurt...',
     saved:'✓ Salvato',updated:'✓ Aggiornato',syncError:'⚠ Errore connessione',
@@ -712,7 +745,7 @@ window.setLang = l => {
    ['labelNote',t.labelNote],['submitBtn',t.submitBtn],['historyTitle',t.historyTitle],
    ['tempNoneBtn',t.tempNone],['tempMeasuredBtn',t.tempMeasured],
    ['mealMilkBtn',t.mealMilk],['mealFoodBtn',t.mealFood],['mealNoneBtn',t.mealNone],
-   ['lblVitD3',t.lblVitD3],['lblPanda',t.lblPanda],['lblUrin',t.lblUrin],['lblStuhl',t.lblStuhl],
+   ['lblVitD3',t.lblVitD3],['lblCamilia',t.lblCamilia],['lblUrin',t.lblUrin],['lblStuhl',t.lblStuhl],
    ['stuhlCounterLabel',t.stuhlCounterLabel],['milkTotalLabel',t.milkTotalLabel],
    ['todayHeader',t.todayHeader],['forecastLabel',t.forecastLabel]
   ].forEach(([id,txt])=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
@@ -875,7 +908,7 @@ window.saveEntry = async () => {
       time:document.getElementById('inputTime').value,
       tempMode, temp:tempMode==='measured'?(tempVal/10).toFixed(1):null,
       mealType, meal,
-      vitD3:checks.vitD3,panda:checks.panda,urin:checks.urin,stuhl:checks.stuhl,
+      vitD3:checks.vitD3,Camilia:checks.Camilia,urin:checks.urin,stuhl:checks.stuhl,
       note:document.getElementById('noteInput').value,
       lang, createdAt:new Date().toISOString()
     });
@@ -898,7 +931,7 @@ window.openEdit = id => {
   setEditMealType(editMealType);
   buildDrum('editDrumList',editMlVal);
   document.getElementById('editMealFoodInput').value=e.mealType==='food'?e.meal:'';
-  ['vitD3','panda','urin','stuhl'].forEach(k=>{
+  ['vitD3','Camilia','urin','stuhl'].forEach(k=>{
     editChecks[k]=!!e[k];
     const K=k[0].toUpperCase()+k.slice(1);
     document.getElementById('editCheck'+K).classList.toggle('checked',editChecks[k]);
@@ -920,7 +953,7 @@ window.saveEdit = async () => {
       time:document.getElementById('editTime').value,
       tempMode:editTempMode, temp:editTempMode==='measured'?(editTempVal/10).toFixed(1):null,
       mealType:editMealType, meal,
-      vitD3:editChecks.vitD3,panda:editChecks.panda,urin:editChecks.urin,stuhl:editChecks.stuhl,
+      vitD3:editChecks.vitD3,Camilia:editChecks.Camilia,urin:editChecks.urin,stuhl:editChecks.stuhl,
       note:document.getElementById('editNote').value
     });
     showToast(T[lang].updated); closeModal();
@@ -973,7 +1006,7 @@ function renderEntry(e,isToday){
   const mChip=e.meal&&e.meal!=='—'?`<span class="chip blue">🍼 ${e.meal}</span>`:'';
   const chips=[tChip,mChip,
     e.vitD3?`<span class="chip green">☀️ ${l.lblVitD3}</span>`:'',
-    e.panda?`<span class="chip green">🌼 ${l.lblPanda}</span>`:'',
+    e.Camilia?`<span class="chip green">🌼 ${l.lblCamilia}</span>`:'',
     e.urin?`<span class="chip green">💧 ${l.lblUrin}</span>`:'',
     e.stuhl?`<span class="chip green">🟤 ${l.lblStuhl}</span>`:''
   ].filter(Boolean).join('');
@@ -1018,7 +1051,7 @@ window.exportXLSX=()=>{
     'Temperatur':e.tempMode==='none'?'—':(e.temp+'°C'),
     'Mahlzeit':e.meal||'—',
     [t.lblVitD3]:e.vitD3?'✓':'',
-    [t.lblPanda]:e.panda?'✓':'',
+    [t.lblCamilia]:e.Camilia?'✓':'',
     [t.lblUrin]:e.urin?'✓':'',
     [t.lblStuhl]:e.stuhl?'✓':'',
     'Bemerkung':e.note||''
@@ -1041,7 +1074,7 @@ function resetForm(){
   setMealType('milk');
   document.getElementById('mealFoodInput').value='';
   document.getElementById('noteInput').value='';
-  ['vitD3','panda','urin','stuhl'].forEach(id=>{
+  ['vitD3','Camilia','urin','stuhl'].forEach(id=>{
     checks[id]=false;
     const k=id[0].toUpperCase()+id.slice(1);
     document.getElementById('check'+k).classList.remove('checked');
@@ -1053,6 +1086,73 @@ function initDateTime(){
   document.getElementById('inputDate').value=n.toISOString().split('T')[0];
   document.getElementById('inputTime').value=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
 }
+
+
+// ── MIGRATION ──────────────────────────────────────────────────────────────
+window.openMigration = () => {
+  const info = document.getElementById('migrationBabyInfo');
+  const btn = document.getElementById('migrationBtn');
+  document.getElementById('migrationStatus').style.display='none';
+  document.getElementById('migrationDone').style.display='none';
+  btn.style.display='block'; btn.disabled=false; btn.textContent='Jetzt importieren';
+  if(currentBabyId){
+    const baby = babies.find(b=>b.id===currentBabyId);
+    info.textContent = '👶 Ziel: '+(baby?baby.icon+' '+baby.name:'Kein Baby ausgewählt');
+    info.style.background='var(--accent-light)'; info.style.color='var(--accent-dark)';
+  } else {
+    info.textContent = '⚠ Bitte zuerst ein Baby auf dem Hauptscreen auswählen.';
+    info.style.background='#fff7ed'; info.style.color='var(--orange)';
+    btn.disabled=true;
+  }
+  document.getElementById('migrationModal').classList.add('open');
+};
+window.closeMigration = () => document.getElementById('migrationModal').classList.remove('open');
+window.closeMigrationOutside = ev => { if(ev.target===document.getElementById('migrationModal')) closeMigration(); };
+
+window.runMigration = async () => {
+  if(!currentUser||!currentBabyId){showToast('Kein Baby ausgewählt',true);return;}
+  const btn=document.getElementById('migrationBtn');
+  btn.disabled=true; btn.textContent='Läuft...';
+  document.getElementById('migrationStatus').style.display='block';
+  document.getElementById('migrationStatusText').textContent='Alte Einträge werden geladen...';
+  document.getElementById('migrationBar').style.width='0%';
+  document.getElementById('migrationCount').textContent='';
+
+  try {
+    // Load old entries from root "rapporte" collection
+    const { collection: col2, getDocs: gd2 } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const oldSnap = await getDocs(collection(db,'rapporte'));
+    const oldDocs = oldSnap.docs;
+    const total = oldDocs.length;
+
+    if(total===0){
+      document.getElementById('migrationStatusText').textContent='Keine alten Einträge gefunden.';
+      document.getElementById('migrationBar').style.width='100%';
+      btn.textContent='Fertig'; return;
+    }
+
+    document.getElementById('migrationStatusText').textContent='Importiere '+total+' Einträge...';
+    const target = collection(db,`users/${currentUser.uid}/babies/${currentBabyId}/rapporte`);
+    let done=0;
+    for(const d of oldDocs){
+      await addDoc(target, d.data());
+      done++;
+      const pct=Math.round(done/total*100);
+      document.getElementById('migrationBar').style.width=pct+'%';
+      document.getElementById('migrationCount').textContent=done+' / '+total+' Einträge kopiert';
+    }
+
+    document.getElementById('migrationStatus').style.display='none';
+    document.getElementById('migrationDone').style.display='block';
+    document.getElementById('migrationDoneText').textContent=total+' Einträge erfolgreich importiert!';
+    btn.style.display='none';
+    showToast('✓ '+total+' Einträge importiert');
+  } catch(e){
+    console.error(e);
+    document.getElementById('migrationStatusText').textContent='⚠ Fehler: '+e.message;
+    btn.disabled=false; btn.textContent='Nochmals versuchen';
+  }
+};
 
 // Enter key on auth
 document.getElementById('authPassword').addEventListener('keydown',e=>{if(e.key==='Enter')doAuth();});
