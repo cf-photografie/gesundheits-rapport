@@ -1008,7 +1008,7 @@ function renderEntry(e,isToday){
     e.vitD3?`<span class="chip green">☀️ ${l.lblVitD3}</span>`:'',
     e.Camilia?`<span class="chip green">🌼 ${l.lblCamilia}</span>`:'',
     e.urin?`<span class="chip green">💧 ${l.lblUrin}</span>`:'',
-    e.stuhl?`<span class="chip green">🟤 ${l.lblStuhl}</span>`:''
+    e.stuhl?`<span class="chip green">💩 ${l.lblStuhl}</span>`:''
   ].filter(Boolean).join('');
   return `<div class="history-entry${isToday?' today-entry':''}">
     <div class="entry-header">
