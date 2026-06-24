@@ -630,6 +630,73 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
 
 <div class="toast" id="toast"></div>
 
+
+<script>
+// ── LEGAL (non-module, globally accessible) ─────────────────────────────
+const LEGAL = {
+  impressum: {
+    title: 'Impressum',
+    content: `
+      <h3 style="color:var(--text);font-size:.95rem;margin-bottom:12px">Angaben gemäss Art. 12 DSG (Schweiz)</h3>
+      <p><strong>Verantwortlich für diese App:</strong></p>
+      <p style="margin-top:8px">Fabio Ferradino C/O<br>Landstrasse 99<br>5430 Wettingen<br>Schweiz</p>
+      <p style="margin-top:12px"><strong>E-Mail:</strong> <a href="mailto:babypass2026@outlook.com" style="color:#2563eb">babypass2026@outlook.com</a></p>
+      <p style="margin-top:12px"><strong>App:</strong> Babypass</p>
+      <p style="margin-top:4px"><strong>Zweck:</strong> Digitales Baby-Tagebuch zur Erfassung von Gesundheitsdaten</p>
+      <p style="margin-top:12px">Haftungsausschluss: Die in dieser App erfassten Daten ersetzen keine ärztliche Beratung.</p>
+    `
+  },
+  datenschutz: {
+    title: 'Datenschutzerklärung',
+    content: `
+      <h3 style="color:var(--text);font-size:.95rem;margin-bottom:12px">Datenschutzerklärung</h3>
+      <p><strong>Gültig ab:</strong> 2026</p>
+      <p style="margin-top:12px"><strong>1. Verantwortliche Stelle</strong></p>
+      <p>Fabio Ferradino C/O, Landstrasse 99, 5430 Wettingen, Schweiz<br>E-Mail: babypass2026@outlook.com</p>
+      <p style="margin-top:12px"><strong>2. Welche Daten wir erfassen</strong></p>
+      <p>E-Mail-Adresse (für Login), Baby-Gesundheitsdaten (Temperatur, Mahlzeiten, Checkpunkte, Bemerkungen), Datum und Uhrzeit der Einträge.</p>
+      <p style="margin-top:12px"><strong>3. Zweck der Datenverarbeitung</strong></p>
+      <p>Die Daten werden ausschliesslich zur Bereitstellung der App-Funktionen verwendet. Es erfolgt keine Weitergabe an Dritte.</p>
+      <p style="margin-top:12px"><strong>4. Datenspeicherung</strong></p>
+      <p>Alle Daten werden verschlüsselt bei Google Firebase (Firestore) gespeichert. Server-Standort: Europa.</p>
+      <p style="margin-top:12px"><strong>5. Ihre Rechte (DSGVO / nDSG)</strong></p>
+      <p>Sie haben das Recht auf Auskunft, Berichtigung, Löschung und Datenübertragbarkeit. Kontakt: babypass2026@outlook.com</p>
+      <p style="margin-top:12px"><strong>6. Datenlöschung</strong></p>
+      <p>Sie können Ihre Daten jederzeit in der App löschen oder eine vollständige Löschung per E-Mail beantragen.</p>
+      <p style="margin-top:12px"><strong>7. Cookies</strong></p>
+      <p>Diese App verwendet keine Cookies. Firebase verwendet lokale Sitzungsdaten zur Authentifizierung.</p>
+    `
+  },
+  agb: {
+    title: 'Nutzungsbedingungen (AGB)',
+    content: `
+      <h3 style="color:var(--text);font-size:.95rem;margin-bottom:12px">Allgemeine Geschäftsbedingungen</h3>
+      <p><strong>Gültig ab:</strong> 2026</p>
+      <p style="margin-top:12px"><strong>1. Geltungsbereich</strong></p>
+      <p>Diese AGB gelten für die Nutzung der App «Babypass» von Fabio Ferradino C/O, Wettingen, Schweiz.</p>
+      <p style="margin-top:12px"><strong>2. Leistungsbeschreibung</strong></p>
+      <p>Babypass ist eine digitale Anwendung zur Erfassung von Baby-Gesundheitsdaten. Die App ersetzt keine medizinische Fachberatung.</p>
+      <p style="margin-top:12px"><strong>3. Haftungsausschluss</strong></p>
+      <p>Der Anbieter übernimmt keine Haftung für die Vollständigkeit oder Richtigkeit der erfassten Daten.</p>
+      <p style="margin-top:12px"><strong>4. Kündigung</strong></p>
+      <p>Nutzer können ihr Konto jederzeit löschen. Daten werden auf Anfrage vollständig entfernt.</p>
+      <p style="margin-top:12px"><strong>5. Anwendbares Recht</strong></p>
+      <p>Es gilt Schweizer Recht. Gerichtsstand ist Wettingen, Aargau.</p>
+    `
+  }
+};
+
+function showLegal(type) {
+  const l = LEGAL[type];
+  if(!l) return;
+  document.getElementById('legalTitle').textContent = l.title;
+  document.getElementById('legalContent').innerHTML = l.content;
+  document.getElementById('legalModal').classList.add('open');
+}
+function closeLegal() { document.getElementById('legalModal').classList.remove('open'); }
+function closeLegalOutside(ev) { if(ev.target===document.getElementById('legalModal')) closeLegal(); }
+</script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -1391,126 +1458,6 @@ window.pickEmoji = emoji => {
 
 
 
-// ── LEGAL ──────────────────────────────────────────────────────────────────
-const LEGAL = {
-  impressum: {
-    title: 'Impressum',
-    content: `
-      <p style="margin-bottom:12px"><strong>Angaben gemäss Art. 12 ZGB</strong></p>
-      <p><strong>Betreiber</strong></p>
-      <p>Fabio Ferradino C/O<br>Landstrasse 99<br>5430 Wettingen<br>Schweiz</p>
-      <br>
-      <p><strong>Kontakt</strong></p>
-      <p>E-Mail: <a href="mailto:babypass2026@outlook.com" style="color:var(--accent)">babypass2026@outlook.com</a></p>
-      <br>
-      <p><strong>Haftungsausschluss</strong></p>
-      <p>Die Inhalte dieser App dienen ausschliesslich der persönlichen Dokumentation und ersetzen keine medizinische Beratung. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte wird keine Gewähr übernommen.</p>
-      <br>
-      <p style="font-size:.75rem;color:var(--text2)">Stand: Juni 2026</p>
-    `
-  },
-  datenschutz: {
-    title: 'Datenschutzerklärung',
-    content: `
-      <p style="margin-bottom:12px"><strong>Datenschutzerklärung gemäss nDSG (Schweiz) und DSGVO (EU)</strong></p>
-
-      <p><strong>1. Verantwortliche Person</strong></p>
-      <p>Fabio Ferradino C/O, Landstrasse 99, 5430 Wettingen<br>
-      E-Mail: babypass2026@outlook.com</p>
-      <br>
-
-      <p><strong>2. Welche Daten wir erfassen</strong></p>
-      <p>Wir erfassen folgende personenbezogene Daten:</p>
-      <ul style="margin-left:16px;margin-top:4px">
-        <li>E-Mail-Adresse (für Login)</li>
-        <li>Gesundheitsdaten des Kindes (Temperatur, Mahlzeiten, Checkpunkte)</li>
-        <li>Datum und Uhrzeit der Einträge</li>
-        <li>Bemerkungen</li>
-      </ul>
-      <br>
-
-      <p><strong>3. Zweck der Datenverarbeitung</strong></p>
-      <p>Die Daten werden ausschliesslich zur Bereitstellung der App-Funktionalität verwendet. Es findet keine Weitergabe an Dritte statt.</p>
-      <br>
-
-      <p><strong>4. Datenspeicherung</strong></p>
-      <p>Alle Daten werden verschlüsselt in Google Firebase (Firestore) gespeichert. Server befinden sich in der EU (Frankfurt). Google Firebase ist DSGVO-konform.</p>
-      <br>
-
-      <p><strong>5. Ihre Rechte</strong></p>
-      <ul style="margin-left:16px;margin-top:4px">
-        <li>Recht auf Auskunft über gespeicherte Daten</li>
-        <li>Recht auf Berichtigung unrichtiger Daten</li>
-        <li>Recht auf Löschung («Recht auf Vergessenwerden»)</li>
-        <li>Recht auf Datenübertragbarkeit (Excel-Export)</li>
-      </ul>
-      <br>
-
-      <p><strong>6. Datenlöschung</strong></p>
-      <p>Sie können alle Ihre Daten jederzeit in der App löschen oder eine Löschung per E-Mail an babypass2026@outlook.com beantragen.</p>
-      <br>
-
-      <p><strong>7. Cookies</strong></p>
-      <p>Diese App verwendet keine Cookies.</p>
-      <br>
-
-      <p><strong>8. Minderjährige</strong></p>
-      <p>Die App richtet sich an Erziehungsberechtigte. Es werden keine Daten direkt von Kindern erhoben.</p>
-      <br>
-
-      <p style="font-size:.75rem;color:var(--text2)">Stand: Juni 2026</p>
-    `
-  },
-  agb: {
-    title: 'Nutzungsbedingungen (AGB)',
-    content: `
-      <p style="margin-bottom:12px"><strong>Allgemeine Geschäftsbedingungen</strong></p>
-
-      <p><strong>1. Geltungsbereich</strong></p>
-      <p>Diese AGB gelten für die Nutzung der App «Babypass» von Fabio Ferradino C/O, Landstrasse 99, 5430 Wettingen.</p>
-      <br>
-
-      <p><strong>2. Leistungsbeschreibung</strong></p>
-      <p>Babypass ist eine App zur persönlichen Gesundheitsdokumentation von Neugeborenen und Kleinkindern. Die App ersetzt keine medizinische Fachberatung.</p>
-      <br>
-
-      <p><strong>3. Nutzungsberechtigung</strong></p>
-      <p>Die App darf ausschliesslich von volljährigen Erziehungsberechtigten genutzt werden.</p>
-      <br>
-
-      <p><strong>4. Kostenlose Nutzung / Premium</strong></p>
-      <p>Die Basisversion ist kostenlos nutzbar. Erweiterte Funktionen können kostenpflichtig sein. Preise werden vor dem Kauf transparent kommuniziert.</p>
-      <br>
-
-      <p><strong>5. Haftung</strong></p>
-      <p>Der Betreiber haftet nicht für Schäden, die durch die Nutzung der App entstehen. Die in der App erfassten Gesundheitsdaten dienen ausschliesslich der persönlichen Dokumentation.</p>
-      <br>
-
-      <p><strong>6. Datenschutz</strong></p>
-      <p>Es gilt die separate Datenschutzerklärung.</p>
-      <br>
-
-      <p><strong>7. Änderungen der AGB</strong></p>
-      <p>Der Betreiber behält sich vor, diese AGB jederzeit zu ändern. Änderungen werden in der App kommuniziert.</p>
-      <br>
-
-      <p><strong>8. Anwendbares Recht</strong></p>
-      <p>Es gilt Schweizer Recht. Gerichtsstand ist Wettingen, Kanton Aargau.</p>
-      <br>
-
-      <p style="font-size:.75rem;color:var(--text2)">Stand: Juni 2026</p>
-    `
-  }
-};
-
-window.showLegal = type => {
-  const l = LEGAL[type];
-  document.getElementById('legalTitle').textContent = l.title;
-  document.getElementById('legalContent').innerHTML = l.content;
-  document.getElementById('legalModal').classList.add('open');
-};
-window.closeLegal = () => document.getElementById('legalModal').classList.remove('open');
-window.closeLegalOutside = ev => { if(ev.target===document.getElementById('legalModal')) closeLegal(); };
 
 // ── EDIT BABY ──────────────────────────────────────────────────────────────
 const BABY_ICONS = ['👶','🌸','⭐','🌙','🦋','🌈','🧸','🐣','🌺','🎀','🌻','🍀'];
