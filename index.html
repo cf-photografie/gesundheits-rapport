@@ -230,6 +230,11 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
       <div id="forgotPwWrap" style="text-align:center;margin-top:12px">
         <button onclick="doForgotPassword()" style="background:none;border:none;color:var(--accent);font-family:var(--font);font-size:.82rem;cursor:pointer;text-decoration:underline">Passwort vergessen?</button>
       </div>
+      <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:16px;justify-content:center">
+        <button onclick="showLegal('impressum')" style="background:none;border:none;color:var(--text2);font-family:var(--font);font-size:.75rem;cursor:pointer;text-decoration:underline">Impressum</button>
+        <button onclick="showLegal('datenschutz')" style="background:none;border:none;color:var(--text2);font-family:var(--font);font-size:.75rem;cursor:pointer;text-decoration:underline">Datenschutz</button>
+        <button onclick="showLegal('agb')" style="background:none;border:none;color:var(--text2);font-family:var(--font);font-size:.75rem;cursor:pointer;text-decoration:underline">AGB</button>
+      </div>
     </div>
   </div>
 </div>
@@ -250,12 +255,12 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
     <div class="welcome-title" id="welcomeTitle">Meine Babys</div>
     <div class="baby-grid" id="babyGrid"></div>
     <button class="add-baby-btn" onclick="openAddBaby()" id="addBabyBtn">+ Baby hinzufügen</button>
-    <button class="open-baby-btn" id="openBabyBtn" onclick="openBabyApp()">Protokoll öffnen →</button>
-    <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
-      <div style="font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);font-weight:700;margin-bottom:10px">Migration</div>
-      <button class="add-baby-btn" onclick="openMigration()" style="border-style:solid;color:var(--accent);border-color:var(--accent-light)">📦 Alte Daten importieren</button>
+    <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
+      <button onclick="showLegal('impressum')" style="background:none;border:none;color:var(--text2);font-family:var(--font);font-size:.72rem;cursor:pointer;text-decoration:underline;margin:0 6px">Impressum</button>
+      <button onclick="showLegal('datenschutz')" style="background:none;border:none;color:var(--text2);font-family:var(--font);font-size:.72rem;cursor:pointer;text-decoration:underline;margin:0 6px">Datenschutz</button>
+      <button onclick="showLegal('agb')" style="background:none;border:none;color:var(--text2);font-family:var(--font);font-size:.72rem;cursor:pointer;text-decoration:underline;margin:0 6px">AGB</button>
     </div>
-  </div>
+    <button class="open-baby-btn" id="openBabyBtn" onclick="openBabyApp()">Protokoll öffnen →</button>
 </div>
 
 <!-- ── MAIN APP SCREEN ── -->
@@ -353,7 +358,8 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
           </div>
         </div>
         <div id="mealFoodSection" style="display:none">
-          <input type="text" id="mealFoodInput">
+          <input type="text" id="mealFoodInput" oninput="filterFoodSuggestions()" onfocus="showFoodSuggestions()" placeholder="">
+          <div id="foodSuggestions" style="display:none;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;margin-top:6px;overflow:hidden;box-shadow:var(--shadow)"></div>
         </div>
       </div>
       <div class="card">
@@ -481,6 +487,26 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
   </div>
 </div>
 
+<!-- EDIT BABY MODAL -->
+<div class="modal-overlay" id="editBabyModal" onclick="closeEditBabyOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Baby bearbeiten</div>
+      <button class="modal-close" onclick="closeEditBaby()">✕</button>
+    </div>
+    <input type="hidden" id="editBabyId">
+    <div class="modal-section">
+      <div class="modal-label">Name des Babys</div>
+      <input type="text" class="modal-input" id="editBabyName" placeholder="z.B. Lena, Noah...">
+    </div>
+    <div class="modal-section">
+      <div class="modal-label">Icon</div>
+      <div id="editBabyIconGrid" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+    </div>
+    <button class="modal-save-btn" onclick="saveEditBaby()">Änderungen speichern</button>
+  </div>
+</div>
+
 <!-- ADD BABY MODAL -->
 <div class="modal-overlay" id="addBabyModal" onclick="closeAddBabyOutside(event)">
   <div class="modal">
@@ -508,33 +534,7 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
 </div>
 
 
-<!-- MIGRATION MODAL -->
-<div class="modal-overlay" id="migrationModal" onclick="closeMigrationOutside(event)">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">📦 Alte Daten importieren</div>
-      <button class="modal-close" onclick="closeMigration()">✕</button>
-    </div>
-    <div id="migrationContent">
-      <p style="font-size:.85rem;color:var(--text2);line-height:1.6;margin-bottom:16px">
-        Alle alten Einträge aus der Collection <strong>«rapporte»</strong> werden in dein ausgewähltes Baby kopiert. Wähle zuerst ein Baby auf dem Hauptscreen aus.
-      </p>
-      <div id="migrationBabyInfo" style="background:var(--accent-light);border-radius:10px;padding:12px;margin-bottom:16px;font-size:.85rem;color:var(--accent-dark);font-weight:600"></div>
-      <div id="migrationStatus" style="display:none;background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:16px">
-        <div style="font-size:.8rem;color:var(--text2);margin-bottom:8px" id="migrationStatusText">Vorbereitung...</div>
-        <div style="background:var(--border);border-radius:4px;height:8px;overflow:hidden">
-          <div id="migrationBar" style="background:var(--accent);height:100%;width:0%;transition:width .3s;border-radius:4px"></div>
-        </div>
-        <div style="font-size:.75rem;color:var(--text2);margin-top:6px" id="migrationCount"></div>
-      </div>
-      <div id="migrationDone" style="display:none;background:var(--green-light);border-radius:10px;padding:14px;margin-bottom:16px;text-align:center">
-        <div style="font-size:1.5rem;margin-bottom:4px">✅</div>
-        <div style="font-size:.9rem;font-weight:700;color:var(--green)" id="migrationDoneText">Migration abgeschlossen!</div>
-      </div>
-      <button class="modal-save-btn" id="migrationBtn" onclick="runMigration()">Jetzt importieren</button>
-    </div>
-  </div>
-</div>
+
 
 
 <!-- SETTINGS MODAL -->
@@ -543,6 +543,17 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
     <div class="modal-header">
       <div class="modal-title">⚙️ Einstellungen</div>
       <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+
+    <!-- PARTNER -->
+    <div style="margin-bottom:20px">
+      <div class="card-label" style="margin-bottom:12px">Partner einladen</div>
+      <div id="partnerList" style="margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px">
+        <input type="email" class="modal-input" id="partnerEmail" placeholder="partner@email.ch" style="margin-bottom:0;flex:1">
+        <button onclick="invitePartner()" style="padding:11px 16px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:var(--font);font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap">Einladen</button>
+      </div>
+      <div style="font-size:.72rem;color:var(--text2);margin-top:8px;line-height:1.5">Der Partner muss sich zuerst mit dieser E-Mail bei Babypass registrieren.</div>
     </div>
 
     <!-- PASSWORT -->
@@ -571,6 +582,49 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
       <button class="modal-close" onclick="closeEmoji()">✕</button>
     </div>
     <div id="emojiGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;max-height:300px;overflow-y:auto"></div>
+  </div>
+</div>
+
+
+<!-- LEGAL MODAL -->
+<div class="modal-overlay" id="legalModal" onclick="closeLegalOutside(event)">
+  <div class="modal" style="max-height:85vh">
+    <div class="modal-header">
+      <div class="modal-title" id="legalTitle">Impressum</div>
+      <button class="modal-close" onclick="closeLegal()">✕</button>
+    </div>
+    <div id="legalContent" style="font-size:.83rem;line-height:1.8;color:var(--text)"></div>
+  </div>
+</div>
+
+
+<!-- LEGAL MODAL -->
+</div>
+
+<!-- EDIT BABY MODAL -->
+<div class="modal-overlay" id="editBabyModal" onclick="closeEditBabyOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Baby bearbeiten</div>
+      <button class="modal-close" onclick="closeEditBaby()">✕</button>
+    </div>
+    <input type="hidden" id="editBabyId">
+    <div class="modal-section">
+      <div class="modal-label">Name</div>
+      <input type="text" class="modal-input" id="editBabyName" placeholder="Name des Babys">
+    </div>
+    <div class="modal-section">
+      <div class="modal-label">Icon</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap" id="editBabyIcons">
+        <span class="baby-icon-btn" data-icon="👶" onclick="selectEditBabyIcon(this)" style="font-size:1.8rem;cursor:pointer;padding:8px;border-radius:8px;border:2px solid var(--border);background:var(--bg)">👶</span>
+        <span class="baby-icon-btn" data-icon="🌸" onclick="selectEditBabyIcon(this)" style="font-size:1.8rem;cursor:pointer;padding:8px;border-radius:8px;border:2px solid var(--border);background:var(--bg)">🌸</span>
+        <span class="baby-icon-btn" data-icon="⭐" onclick="selectEditBabyIcon(this)" style="font-size:1.8rem;cursor:pointer;padding:8px;border-radius:8px;border:2px solid var(--border);background:var(--bg)">⭐</span>
+        <span class="baby-icon-btn" data-icon="🌙" onclick="selectEditBabyIcon(this)" style="font-size:1.8rem;cursor:pointer;padding:8px;border-radius:8px;border:2px solid var(--border);background:var(--bg)">🌙</span>
+        <span class="baby-icon-btn" data-icon="🦋" onclick="selectEditBabyIcon(this)" style="font-size:1.8rem;cursor:pointer;padding:8px;border-radius:8px;border:2px solid var(--border);background:var(--bg)">🦋</span>
+        <span class="baby-icon-btn" data-icon="🌈" onclick="selectEditBabyIcon(this)" style="font-size:1.8rem;cursor:pointer;padding:8px;border-radius:8px;border:2px solid var(--border);background:var(--bg)">🌈</span>
+      </div>
+    </div>
+    <button class="modal-save-btn" onclick="saveEditBaby()">Änderungen speichern</button>
   </div>
 </div>
 
@@ -621,7 +675,7 @@ onAuthStateChanged(auth, user => {
     currentUser = user;
     document.getElementById('welcomeUserEmail').textContent = user.email;
     showScreen('welcomeScreen');
-    loadBabies(); loadCheckpointSettings();
+    loadBabies().then(()=>checkPartnerAccess()); loadCheckpointSettings();
   } else {
     currentUser = null;
     showScreen('authScreen');
@@ -713,10 +767,11 @@ async function loadBabies(){
 function renderBabyGrid(){
   const grid = document.getElementById('babyGrid');
   grid.innerHTML = babies.map(b=>`
-    <div class="baby-card${currentBabyId===b.id?' selected':''}" onclick="selectBaby('${b.id}')">
+    <div class="baby-card${currentBabyId===b.id?' selected':''}" onclick="selectBaby('${b.id}')" style="position:relative">
+      ${!b.isShared?`<button onclick="event.stopPropagation();openEditBaby('${b.id}')" style="position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1">✏️</button>`:''}
       <div class="baby-card-icon">${b.icon||'👶'}</div>
       <div class="baby-card-name">${b.name}</div>
-      <div class="baby-card-sub">Protokoll</div>
+      <div class="baby-card-sub">${b.isShared?'👥 Geteilt':'Protokoll'}</div>
     </div>`).join('');
   document.getElementById('openBabyBtn').classList.toggle('show', !!currentBabyId);
 }
@@ -978,7 +1033,11 @@ window.toggleEditCheck = id => {
 };
 
 // ── SAVE ───────────────────────────────────────────────────────────────────
-function rapportCol(){return collection(db,`users/${currentUser.uid}/babies/${currentBabyId}/rapporte`);}
+function rapportCol(){
+  const baby = babies.find(b=>b.id===currentBabyId);
+  const ownerUid = (baby&&baby.ownerUid) ? baby.ownerUid : currentUser.uid;
+  return collection(db,`users/${ownerUid}/babies/${currentBabyId}/rapporte`);
+}
 
 window.saveEntry = async () => {
   if(!currentUser||!currentBabyId)return;
@@ -1031,7 +1090,9 @@ window.saveEdit = async () => {
   const btn=document.getElementById('editSaveBtn'); btn.disabled=true;
   const meal=editMealType==='milk'?editMlVal+' ml':editMealType==='food'?(document.getElementById('editMealFoodInput').value||''):'—';
   try {
-    await updateDoc(doc(db,`users/${currentUser.uid}/babies/${currentBabyId}/rapporte`,id),{
+    const _baby=babies.find(b=>b.id===currentBabyId);
+    const _owner=(_baby&&_baby.ownerUid)?_baby.ownerUid:currentUser.uid;
+    await updateDoc(doc(db,`users/${_owner}/babies/${currentBabyId}/rapporte`,id),{
       date:document.getElementById('editDate').value,
       time:document.getElementById('editTime').value,
       tempMode:editTempMode, temp:editTempMode==='measured'?(editTempVal/10).toFixed(1):null,
@@ -1115,7 +1176,7 @@ window.togglePast=()=>{
 // ── DELETE / CLEAR ─────────────────────────────────────────────────────────
 window.deleteEntry=async id=>{
   if(!confirm(T[lang].confirmDelete))return;
-  try{await deleteDoc(doc(db,`users/${currentUser.uid}/babies/${currentBabyId}/rapporte`,id));}
+  try{const _b=babies.find(b=>b.id===currentBabyId);const _o=(_b&&_b.ownerUid)?_b.ownerUid:currentUser.uid;await deleteDoc(doc(db,`users/${_o}/babies/${currentBabyId}/rapporte`,id));}
   catch(e){showToast('⚠ Fehler',true);}
 };
 window.clearAll=async()=>{
@@ -1266,6 +1327,7 @@ window.openSettings = () => {
   document.getElementById('settingsNewPw').value='';
   document.getElementById('settingsNewPw2').value='';
   renderCheckpointSettings();
+  loadPartners();
   document.getElementById('settingsModal').classList.add('open');
 };
 window.closeSettings = () => document.getElementById('settingsModal').classList.remove('open');
@@ -1326,6 +1388,365 @@ window.pickEmoji = emoji => {
   }
   closeEmoji();
 };
+
+
+
+// ── LEGAL ──────────────────────────────────────────────────────────────────
+const LEGAL = {
+  impressum: {
+    title: 'Impressum',
+    content: `
+      <p style="margin-bottom:12px"><strong>Angaben gemäss Art. 12 ZGB</strong></p>
+      <p><strong>Betreiber</strong></p>
+      <p>Fabio Ferradino C/O<br>Landstrasse 99<br>5430 Wettingen<br>Schweiz</p>
+      <br>
+      <p><strong>Kontakt</strong></p>
+      <p>E-Mail: <a href="mailto:babypass2026@outlook.com" style="color:var(--accent)">babypass2026@outlook.com</a></p>
+      <br>
+      <p><strong>Haftungsausschluss</strong></p>
+      <p>Die Inhalte dieser App dienen ausschliesslich der persönlichen Dokumentation und ersetzen keine medizinische Beratung. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte wird keine Gewähr übernommen.</p>
+      <br>
+      <p style="font-size:.75rem;color:var(--text2)">Stand: Juni 2026</p>
+    `
+  },
+  datenschutz: {
+    title: 'Datenschutzerklärung',
+    content: `
+      <p style="margin-bottom:12px"><strong>Datenschutzerklärung gemäss nDSG (Schweiz) und DSGVO (EU)</strong></p>
+
+      <p><strong>1. Verantwortliche Person</strong></p>
+      <p>Fabio Ferradino C/O, Landstrasse 99, 5430 Wettingen<br>
+      E-Mail: babypass2026@outlook.com</p>
+      <br>
+
+      <p><strong>2. Welche Daten wir erfassen</strong></p>
+      <p>Wir erfassen folgende personenbezogene Daten:</p>
+      <ul style="margin-left:16px;margin-top:4px">
+        <li>E-Mail-Adresse (für Login)</li>
+        <li>Gesundheitsdaten des Kindes (Temperatur, Mahlzeiten, Checkpunkte)</li>
+        <li>Datum und Uhrzeit der Einträge</li>
+        <li>Bemerkungen</li>
+      </ul>
+      <br>
+
+      <p><strong>3. Zweck der Datenverarbeitung</strong></p>
+      <p>Die Daten werden ausschliesslich zur Bereitstellung der App-Funktionalität verwendet. Es findet keine Weitergabe an Dritte statt.</p>
+      <br>
+
+      <p><strong>4. Datenspeicherung</strong></p>
+      <p>Alle Daten werden verschlüsselt in Google Firebase (Firestore) gespeichert. Server befinden sich in der EU (Frankfurt). Google Firebase ist DSGVO-konform.</p>
+      <br>
+
+      <p><strong>5. Ihre Rechte</strong></p>
+      <ul style="margin-left:16px;margin-top:4px">
+        <li>Recht auf Auskunft über gespeicherte Daten</li>
+        <li>Recht auf Berichtigung unrichtiger Daten</li>
+        <li>Recht auf Löschung («Recht auf Vergessenwerden»)</li>
+        <li>Recht auf Datenübertragbarkeit (Excel-Export)</li>
+      </ul>
+      <br>
+
+      <p><strong>6. Datenlöschung</strong></p>
+      <p>Sie können alle Ihre Daten jederzeit in der App löschen oder eine Löschung per E-Mail an babypass2026@outlook.com beantragen.</p>
+      <br>
+
+      <p><strong>7. Cookies</strong></p>
+      <p>Diese App verwendet keine Cookies.</p>
+      <br>
+
+      <p><strong>8. Minderjährige</strong></p>
+      <p>Die App richtet sich an Erziehungsberechtigte. Es werden keine Daten direkt von Kindern erhoben.</p>
+      <br>
+
+      <p style="font-size:.75rem;color:var(--text2)">Stand: Juni 2026</p>
+    `
+  },
+  agb: {
+    title: 'Nutzungsbedingungen (AGB)',
+    content: `
+      <p style="margin-bottom:12px"><strong>Allgemeine Geschäftsbedingungen</strong></p>
+
+      <p><strong>1. Geltungsbereich</strong></p>
+      <p>Diese AGB gelten für die Nutzung der App «Babypass» von Fabio Ferradino C/O, Landstrasse 99, 5430 Wettingen.</p>
+      <br>
+
+      <p><strong>2. Leistungsbeschreibung</strong></p>
+      <p>Babypass ist eine App zur persönlichen Gesundheitsdokumentation von Neugeborenen und Kleinkindern. Die App ersetzt keine medizinische Fachberatung.</p>
+      <br>
+
+      <p><strong>3. Nutzungsberechtigung</strong></p>
+      <p>Die App darf ausschliesslich von volljährigen Erziehungsberechtigten genutzt werden.</p>
+      <br>
+
+      <p><strong>4. Kostenlose Nutzung / Premium</strong></p>
+      <p>Die Basisversion ist kostenlos nutzbar. Erweiterte Funktionen können kostenpflichtig sein. Preise werden vor dem Kauf transparent kommuniziert.</p>
+      <br>
+
+      <p><strong>5. Haftung</strong></p>
+      <p>Der Betreiber haftet nicht für Schäden, die durch die Nutzung der App entstehen. Die in der App erfassten Gesundheitsdaten dienen ausschliesslich der persönlichen Dokumentation.</p>
+      <br>
+
+      <p><strong>6. Datenschutz</strong></p>
+      <p>Es gilt die separate Datenschutzerklärung.</p>
+      <br>
+
+      <p><strong>7. Änderungen der AGB</strong></p>
+      <p>Der Betreiber behält sich vor, diese AGB jederzeit zu ändern. Änderungen werden in der App kommuniziert.</p>
+      <br>
+
+      <p><strong>8. Anwendbares Recht</strong></p>
+      <p>Es gilt Schweizer Recht. Gerichtsstand ist Wettingen, Kanton Aargau.</p>
+      <br>
+
+      <p style="font-size:.75rem;color:var(--text2)">Stand: Juni 2026</p>
+    `
+  }
+};
+
+window.showLegal = type => {
+  const l = LEGAL[type];
+  document.getElementById('legalTitle').textContent = l.title;
+  document.getElementById('legalContent').innerHTML = l.content;
+  document.getElementById('legalModal').classList.add('open');
+};
+window.closeLegal = () => document.getElementById('legalModal').classList.remove('open');
+window.closeLegalOutside = ev => { if(ev.target===document.getElementById('legalModal')) closeLegal(); };
+
+// ── EDIT BABY ──────────────────────────────────────────────────────────────
+const BABY_ICONS = ['👶','🌸','⭐','🌙','🦋','🌈','🧸','🐣','🌺','🎀','🌻','🍀'];
+
+window.openEditBaby = id => {
+  const baby = babies.find(b=>b.id===id);
+  if(!baby) return;
+  document.getElementById('editBabyId').value = id;
+  document.getElementById('editBabyName').value = baby.name;
+  selectedBabyIcon = baby.icon||'👶';
+  const grid = document.getElementById('editBabyIconGrid');
+  grid.innerHTML = BABY_ICONS.map(icon=>`
+    <span onclick="selectEditBabyIcon(this,'${icon}')"
+      style="font-size:1.8rem;cursor:pointer;padding:8px;border-radius:8px;border:2px solid ${icon===selectedBabyIcon?'var(--accent)':'var(--border)'};background:${icon===selectedBabyIcon?'var(--accent-light)':'var(--bg)'}">
+      ${icon}
+    </span>`).join('');
+  document.getElementById('editBabyModal').classList.add('open');
+};
+window.closeEditBaby = () => document.getElementById('editBabyModal').classList.remove('open');
+window.closeEditBabyOutside = ev => { if(ev.target===document.getElementById('editBabyModal')) closeEditBaby(); };
+
+window.selectEditBabyIcon = (el, icon) => {
+  selectedBabyIcon = icon;
+  document.querySelectorAll('#editBabyIconGrid span').forEach(s=>{
+    s.style.borderColor = s.textContent.trim()===icon?'var(--accent)':'var(--border)';
+    s.style.background = s.textContent.trim()===icon?'var(--accent-light)':'var(--bg)';
+  });
+};
+
+window.saveEditBaby = async () => {
+  const id = document.getElementById('editBabyId').value;
+  const name = document.getElementById('editBabyName').value.trim();
+  if(!name){showToast('Bitte einen Namen eingeben',true);return;}
+  try {
+    await updateDoc(doc(db,`users/${currentUser.uid}/babies/${id}`),{name, icon:selectedBabyIcon});
+    const baby = babies.find(b=>b.id===id);
+    if(baby){baby.name=name; baby.icon=selectedBabyIcon;}
+    renderBabyGrid();
+    closeEditBaby();
+    showToast('✓ Baby aktualisiert');
+  } catch(e){showToast('⚠ Fehler',true);console.error(e);}
+};
+
+
+
+// ── BABY EDIT ──────────────────────────────────────────────────────────────
+let editBabySelectedIcon = '👶';
+
+      </div>
+      <div class="baby-card-name">${b.name}</div>
+      <div class="baby-card-sub">${b.isShared?'👥 Geteilt':'Protokoll'}</div>
+    </div>`).join('');
+  document.getElementById('openBabyBtn').classList.toggle('show', !!currentBabyId);
+}
+
+window.openEditBaby = id => {
+  const baby = babies.find(b=>b.id===id);
+  if(!baby) return;
+  document.getElementById('editBabyId').value = id;
+  document.getElementById('editBabyName').value = baby.name;
+  editBabySelectedIcon = baby.icon||'👶';
+  document.querySelectorAll('#editBabyIcons .baby-icon-btn').forEach(b=>{
+    const sel = b.dataset.icon===editBabySelectedIcon;
+    b.style.borderColor = sel?'var(--accent)':'var(--border)';
+    b.style.background = sel?'var(--accent-light)':'var(--bg)';
+  });
+  document.getElementById('editBabyModal').classList.add('open');
+};
+window.closeEditBaby = () => document.getElementById('editBabyModal').classList.remove('open');
+window.closeEditBabyOutside = ev => { if(ev.target===document.getElementById('editBabyModal')) closeEditBaby(); };
+
+window.selectEditBabyIcon = el => {
+  editBabySelectedIcon = el.dataset.icon;
+  document.querySelectorAll('#editBabyIcons .baby-icon-btn').forEach(b=>{
+    b.style.borderColor = b===el?'var(--accent)':'var(--border)';
+    b.style.background = b===el?'var(--accent-light)':'var(--bg)';
+  });
+};
+
+window.saveEditBaby = async () => {
+  const id = document.getElementById('editBabyId').value;
+  const name = document.getElementById('editBabyName').value.trim();
+  if(!name){showToast('Bitte einen Namen eingeben',true);return;}
+  try {
+    await updateDoc(doc(db,`users/${currentUser.uid}/babies/${id}`),{name, icon:editBabySelectedIcon});
+    const baby = babies.find(b=>b.id===id);
+    if(baby){baby.name=name; baby.icon=editBabySelectedIcon;}
+    renderBabyGrid();
+    closeEditBaby();
+    showToast('✓ Baby aktualisiert');
+  } catch(e){showToast('⚠ Fehler',true);console.error(e);}
+};
+
+// ── PARTNER ────────────────────────────────────────────────────────────────
+async function loadPartners(){
+  if(!currentUser||!currentBabyId) return;
+  try {
+    const snap = await getDocs(collection(db,`users/${currentUser.uid}/babies/${currentBabyId}/partners`));
+    const partners = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const list = document.getElementById('partnerList');
+    if(!list) return;
+    if(!partners.length){
+      list.innerHTML='<div style="font-size:.8rem;color:var(--text2);padding:8px 0">Noch kein Partner eingeladen.</div>';
+      return;
+    }
+    list.innerHTML = partners.map(p=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border-radius:10px;margin-bottom:8px">
+        <div>
+          <div style="font-size:.85rem;font-weight:700">${p.email}</div>
+          <div style="font-size:.7rem;color:${p.status==='active'?'var(--green)':'var(--orange)'}">
+            ${p.status==='active'?'✓ Aktiv':'⏳ Ausstehend'}
+          </div>
+        </div>
+        <button onclick="removePartner('${p.id}')" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--red);font-size:12px;cursor:pointer">✕</button>
+      </div>`).join('');
+  } catch(e){ console.error(e); }
+}
+
+window.invitePartner = async () => {
+  const email = document.getElementById('partnerEmail').value.trim().toLowerCase();
+  if(!email){showToast('Bitte E-Mail eingeben',true);return;}
+  if(!currentBabyId){showToast('Bitte zuerst ein Baby auswählen',true);return;}
+  try {
+    // Check if already invited
+    const existing = await getDocs(collection(db,`users/${currentUser.uid}/babies/${currentBabyId}/partners`));
+    if(existing.docs.some(d=>d.data().email===email)){showToast('Bereits eingeladen',true);return;}
+
+    // Add partner to owner's baby
+    await addDoc(collection(db,`users/${currentUser.uid}/babies/${currentBabyId}/partners`),{
+      email, status:'pending', invitedAt:new Date().toISOString()
+    });
+
+    // Add shared access entry for partner (they look this up on login)
+    // We store: partnerEmail -> {ownerUid, babyId}
+    await setDoc(doc(db,`partnerInvites/${email.replace(/\./g,'_')}_${currentBabyId}`),{
+      ownerUid: currentUser.uid,
+      babyId: currentBabyId,
+      email,
+      status:'pending',
+      invitedAt: new Date().toISOString()
+    });
+
+    document.getElementById('partnerEmail').value='';
+    showToast('✓ Partner eingeladen');
+    loadPartners();
+  } catch(e){ console.error(e); showToast('⚠ Fehler: '+e.message,true); }
+};
+
+window.removePartner = async id => {
+  if(!confirm('Partner entfernen?')) return;
+  try {
+    await deleteDoc(doc(db,`users/${currentUser.uid}/babies/${currentBabyId}/partners`,id));
+    loadPartners();
+    showToast('✓ Partner entfernt');
+  } catch(e){ showToast('⚠ Fehler',true); }
+};
+
+async function checkPartnerAccess(){
+  if(!currentUser) return;
+  const email = currentUser.email.toLowerCase().replace(/\./g,'_');
+  try {
+    // Find all invites for this user's email
+    const snap = await getDocs(collection(db,'partnerInvites'));
+    const myInvites = snap.docs.filter(d=>d.data().email===currentUser.email.toLowerCase());
+    for(const inv of myInvites){
+      const data = inv.data();
+      // Check if baby already in list
+      if(!babies.find(b=>b.id===data.babyId&&b.ownerUid===data.ownerUid)){
+        // Load baby info
+        const babyDoc = await getDoc(doc(db,`users/${data.ownerUid}/babies/${data.babyId}`));
+        if(babyDoc.exists()){
+          babies.push({
+            id:data.babyId,
+            ownerUid:data.ownerUid,
+            isShared:true,
+            ...babyDoc.data()
+          });
+          // Mark invite as active
+          await setDoc(inv.ref,{...data,status:'active'},{merge:true});
+          // Update partner status on owner side
+          const partnerSnap = await getDocs(collection(db,`users/${data.ownerUid}/babies/${data.babyId}/partners`));
+          const myEntry = partnerSnap.docs.find(d=>d.data().email===currentUser.email.toLowerCase());
+          if(myEntry) await setDoc(myEntry.ref,{...myEntry.data(),status:'active'},{merge:true});
+        }
+      }
+    }
+    renderBabyGrid();
+  } catch(e){ console.error(e); }
+}
+
+// ── FOOD SUGGESTIONS ───────────────────────────────────────────────────────
+let foodHistory = [];
+
+function buildFoodHistory(){
+  const foods = allEntries
+    .filter(e=>e.mealType==='food'&&e.meal&&e.meal!=='—')
+    .map(e=>e.meal.trim())
+    .filter((v,i,a)=>a.indexOf(v)===i) // unique
+    .slice(0,20);
+  foodHistory = foods;
+}
+
+window.showFoodSuggestions = () => {
+  buildFoodHistory();
+  renderFoodSuggestions(foodHistory);
+};
+
+window.filterFoodSuggestions = () => {
+  const val = document.getElementById('mealFoodInput').value.toLowerCase();
+  const filtered = val ? foodHistory.filter(f=>f.toLowerCase().includes(val)) : foodHistory;
+  renderFoodSuggestions(filtered);
+};
+
+function renderFoodSuggestions(list){
+  const box = document.getElementById('foodSuggestions');
+  if(!list.length){box.style.display='none';return;}
+  box.style.display='block';
+  box.innerHTML = list.map(f=>`
+    <div onclick="selectFood('${f.replace(/'/g,"\'")}')"
+      style="padding:11px 14px;font-size:.88rem;cursor:pointer;border-bottom:1px solid var(--border);font-family:var(--font)"
+      onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">${f}</div>
+  `).join('');
+}
+
+window.selectFood = food => {
+  document.getElementById('mealFoodInput').value = food;
+  document.getElementById('foodSuggestions').style.display='none';
+};
+
+// Hide suggestions when clicking outside
+document.addEventListener('click', e => {
+  if(!e.target.closest('#mealFoodSection')) {
+    const box = document.getElementById('foodSuggestions');
+    if(box) box.style.display='none';
+  }
+});
 
 // ── MIGRATION ──────────────────────────────────────────────────────────────
 window.openMigration = () => {
