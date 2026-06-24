@@ -261,6 +261,7 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
       <button onclick="showLegal('agb')" style="background:none;border:none;color:var(--text2);font-family:var(--font);font-size:.72rem;cursor:pointer;text-decoration:underline;margin:0 6px">AGB</button>
     </div>
     <button class="open-baby-btn" id="openBabyBtn" onclick="openBabyApp()">Protokoll öffnen →</button>
+  </div>
 </div>
 
 <!-- ── MAIN APP SCREEN ── -->
@@ -597,10 +598,6 @@ textarea:focus,input[type="text"]:focus{border-color:var(--accent)}
   </div>
 </div>
 
-
-<!-- LEGAL MODAL -->
-</div>
-
 <!-- EDIT BABY MODAL -->
 <div class="modal-overlay" id="editBabyModal" onclick="closeEditBabyOutside(event)">
   <div class="modal">
@@ -700,13 +697,13 @@ function closeLegalOutside(ev) { if(ev.target===document.getElementById('legalMo
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy, onSnapshot, setDoc, getDoc, where }
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy, onSnapshot, setDoc, getDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const app = initializeApp({
-  apiKey:"", // BITTE HIER IHREN EIGENEN FIREBASE API-KEY EINFÜGEN. Dieser Key ist öffentlich sichtbar, daher unbedingt Firebase Security Rules konfigurieren!
+  apiKey:"AIzaSyAHwARmCNsKcQZj276ogN0DEONJN1DoQoQ",
   authDomain:"gesundheits-rapport.firebaseapp.com",
   projectId:"gesundheits-rapport",
   storageBucket:"gesundheits-rapport.firebasestorage.app",
@@ -833,13 +830,17 @@ async function loadBabies(){
 
 function renderBabyGrid(){
   const grid = document.getElementById('babyGrid');
-  grid.innerHTML = babies.map(b=>`
-    <div class="baby-card${currentBabyId===b.id?' selected':''}" onclick="selectBaby('${b.id}')" style="position:relative">
-      ${!b.isShared?`<button onclick="event.stopPropagation();openEditBaby('${b.id}')" style="position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1">✏️</button>`:''}
-      <div class="baby-card-icon">${b.icon||'👶'}</div>
-      <div class="baby-card-name">${b.name}</div>
-      <div class="baby-card-sub">${b.isShared?'👥 Geteilt':'Protokoll'}</div>
-    </div>`).join('');
+  grid.innerHTML = babies.map(b=>{
+    const selected = currentBabyId===b.id ? ' selected' : '';
+    const editBtn = !b.isShared ? '<button onclick="event.stopPropagation();openEditBaby(\'' + b.id + '\')" style="position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:1px solid #e2e8f0;background:#fff;font-size:11px;cursor:pointer">✏️</button>' : '';
+    const sub = b.isShared ? '👥 Geteilt' : 'Protokoll';
+    return '<div class="baby-card' + selected + '" onclick="selectBaby(\'' + b.id + '\')" style="position:relative">' +
+      editBtn +
+      '<div class="baby-card-icon">' + (b.icon||'👶') + '</div>' +
+      '<div class="baby-card-name">' + b.name + '</div>' +
+      '<div class="baby-card-sub">' + sub + '</div>' +
+      '</div>';
+  }).join('');
   document.getElementById('openBabyBtn').classList.toggle('show', !!currentBabyId);
 }
 
@@ -1293,7 +1294,7 @@ function resetForm(){
 }
 function initDateTime(){
   const n=new Date();
-  document.getElementById('inputDate').value=`${n.getFullYear()}-${(n.getMonth() + 1).toString().padStart(2, '0')}-${n.getDate().toString().padStart(2, '0')}`;
+  document.getElementById('inputDate').value=n.toISOString().split('T')[0];
   document.getElementById('inputTime').value=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
 }
 
@@ -1457,6 +1458,93 @@ window.pickEmoji = emoji => {
 };
 
 
+
+
+// ── EDIT BABY ──────────────────────────────────────────────────────────────
+const BABY_ICONS = ['👶','🌸','⭐','🌙','🦋','🌈','🧸','🐣','🌺','🎀','🌻','🍀'];
+
+window.openEditBaby = id => {
+  const baby = babies.find(b=>b.id===id);
+  if(!baby) return;
+  document.getElementById('editBabyId').value = id;
+  document.getElementById('editBabyName').value = baby.name;
+  selectedBabyIcon = baby.icon||'👶';
+  const grid = document.getElementById('editBabyIconGrid');
+  grid.innerHTML = BABY_ICONS.map(icon=>`
+    <span onclick="selectEditBabyIcon(this,'${icon}')"
+      style="font-size:1.8rem;cursor:pointer;padding:8px;border-radius:8px;border:2px solid ${icon===selectedBabyIcon?'var(--accent)':'var(--border)'};background:${icon===selectedBabyIcon?'var(--accent-light)':'var(--bg)'}">
+      ${icon}
+    </span>`).join('');
+  document.getElementById('editBabyModal').classList.add('open');
+};
+window.closeEditBaby = () => document.getElementById('editBabyModal').classList.remove('open');
+window.closeEditBabyOutside = ev => { if(ev.target===document.getElementById('editBabyModal')) closeEditBaby(); };
+
+window.selectEditBabyIcon = (el, icon) => {
+  selectedBabyIcon = icon;
+  document.querySelectorAll('#editBabyIconGrid span').forEach(s=>{
+    s.style.borderColor = s.textContent.trim()===icon?'var(--accent)':'var(--border)';
+    s.style.background = s.textContent.trim()===icon?'var(--accent-light)':'var(--bg)';
+  });
+};
+
+window.saveEditBaby = async () => {
+  const id = document.getElementById('editBabyId').value;
+  const name = document.getElementById('editBabyName').value.trim();
+  if(!name){showToast('Bitte einen Namen eingeben',true);return;}
+  try {
+    await updateDoc(doc(db,`users/${currentUser.uid}/babies/${id}`),{name, icon:selectedBabyIcon});
+    const baby = babies.find(b=>b.id===id);
+    if(baby){baby.name=name; baby.icon=selectedBabyIcon;}
+    renderBabyGrid();
+    closeEditBaby();
+    showToast('✓ Baby aktualisiert');
+  } catch(e){showToast('⚠ Fehler',true);console.error(e);}
+};
+
+
+
+// ── BABY EDIT ──────────────────────────────────────────────────────────────
+let editBabySelectedIcon = '👶';
+
+window.openEditBaby = id => {
+  const baby = babies.find(b=>b.id===id);
+  if(!baby) return;
+  document.getElementById('editBabyId').value = id;
+  document.getElementById('editBabyName').value = baby.name;
+  editBabySelectedIcon = baby.icon||'👶';
+  document.querySelectorAll('#editBabyIcons .baby-icon-btn').forEach(b=>{
+    const sel = b.dataset.icon===editBabySelectedIcon;
+    b.style.borderColor = sel?'var(--accent)':'var(--border)';
+    b.style.background = sel?'var(--accent-light)':'var(--bg)';
+  });
+  document.getElementById('editBabyModal').classList.add('open');
+};
+window.closeEditBaby = () => document.getElementById('editBabyModal').classList.remove('open');
+window.closeEditBabyOutside = ev => { if(ev.target===document.getElementById('editBabyModal')) closeEditBaby(); };
+
+window.selectEditBabyIcon = el => {
+  editBabySelectedIcon = el.dataset.icon;
+  document.querySelectorAll('#editBabyIcons .baby-icon-btn').forEach(b=>{
+    b.style.borderColor = b===el?'var(--accent)':'var(--border)';
+    b.style.background = b===el?'var(--accent-light)':'var(--bg)';
+  });
+};
+
+window.saveEditBaby = async () => {
+  const id = document.getElementById('editBabyId').value;
+  const name = document.getElementById('editBabyName').value.trim();
+  if(!name){showToast('Bitte einen Namen eingeben',true);return;}
+  try {
+    await updateDoc(doc(db,`users/${currentUser.uid}/babies/${id}`),{name, icon:editBabySelectedIcon});
+    const baby = babies.find(b=>b.id===id);
+    if(baby){baby.name=name; baby.icon=editBabySelectedIcon;}
+    renderBabyGrid();
+    closeEditBaby();
+    showToast('✓ Baby aktualisiert');
+  } catch(e){showToast('⚠ Fehler',true);console.error(e);}
+};
+
 // ── PARTNER ────────────────────────────────────────────────────────────────
 async function loadPartners(){
   if(!currentUser||!currentBabyId) return;
@@ -1526,9 +1614,8 @@ async function checkPartnerAccess(){
   const email = currentUser.email.toLowerCase().replace(/\./g,'_');
   try {
     // Find all invites for this user's email
-    const q = query(collection(db,'partnerInvites'), where('email', '==', currentUser.email.toLowerCase()));
-    const snap = await getDocs(q);
-    const myInvites = snap.docs;
+    const snap = await getDocs(collection(db,'partnerInvites'));
+    const myInvites = snap.docs.filter(d=>d.data().email===currentUser.email.toLowerCase());
     for(const inv of myInvites){
       const data = inv.data();
       // Check if baby already in list
@@ -1603,7 +1690,7 @@ document.addEventListener('click', e => {
 });
 
 // ── MIGRATION ──────────────────────────────────────────────────────────────
-// window.openMigration = () => {
+window.openMigration = () => {
   const info = document.getElementById('migrationBabyInfo');
   const btn = document.getElementById('migrationBtn');
   document.getElementById('migrationStatus').style.display='none';
@@ -1618,12 +1705,12 @@ document.addEventListener('click', e => {
     info.style.background='#fff7ed'; info.style.color='var(--orange)';
     btn.disabled=true;
   }
-  // document.getElementById('migrationModal').classList.add('open');
+  document.getElementById('migrationModal').classList.add('open');
 };
-// window.closeMigration = () => document.getElementById('migrationModal').classList.remove('open');
-// window.closeMigrationOutside = ev => { if(ev.target===document.getElementById('migrationModal')) closeMigration(); };
+window.closeMigration = () => document.getElementById('migrationModal').classList.remove('open');
+window.closeMigrationOutside = ev => { if(ev.target===document.getElementById('migrationModal')) closeMigration(); };
 
-// window.runMigration = async () => {
+window.runMigration = async () => {
   if(!currentUser||!currentBabyId){showToast('Kein Baby ausgewählt',true);return;}
   const btn=document.getElementById('migrationBtn');
   btn.disabled=true; btn.textContent='Läuft...';
